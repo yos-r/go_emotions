@@ -1,0 +1,14 @@
+{
+    "workbench.colorCustomizations": {
+        "activityBar.background": "#470275",
+        "titleBar.activeBackground": "#6402A4",
+        "titleBar.activeForeground": "#FCF9FF"
+    },
+    "i18n-ally.localesPaths": [
+        "venv/Lib/site-packages/babel/messages",
+        "venv/Lib/site-packages/jupyter_server/i18n",
+        "venv/Lib/site-packages/tensorflow/python/autograph/lang",
+        "venv/Lib/site-packages/jedi/third_party/django-stubs/django-stubs/conf/locale",
+        "venv/Lib/site-packages/jedi/third_party/django-stubs/django-stubs/contrib/messages"
+    ]
+}
