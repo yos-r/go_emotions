@@ -7,7 +7,13 @@
       "Bash(pip install:*)",
       "Bash(.venvScriptspython.exe -m pip install --upgrade pip)",
       "Bash(./venv/Scripts/python.exe -m pip install:*)",
-      "Bash(./venv/Scripts/pip.exe install:*)"
+      "Bash(./venv/Scripts/pip.exe install:*)",
+      "Bash(python bert.py:*)",
+      "Bash(python -c:*)",
+      "Bash(tee:*)",
+      "Bash(..venvScriptsactivate)",
+      "Bash(python -m pip install:*)",
+      "Bash(./venv/Scripts/python.exe:*)"
     ],
     "deny": [],
     "ask": []
