@@ -1,0 +1,84 @@
+================================================================================
+ BERT MULTI-LABEL EMOTION CLASSIFICATION - EVALUATION REPORT
+================================================================================
+
+MODEL INFORMATION
+--------------------------------------------------------------------------------
+Model Architecture:        BERT (bert-base-uncased)
+Model Type:                Multi-Label Classification
+Number of Labels:          28
+Dropout Rate:              0.3
+Classifier:                Dense Layer (sigmoid activation)
+Max Sequence Length:       128
+Batch Size:                32
+Classification Threshold:  0.5
+Trained Epochs:            2
+Best Validation Loss:      0.0299
+
+================================================================================
+ OVERALL METRICS ON TEST SET
+================================================================================
+
+Metric                                     Score
+--------------------------------------------------------------------------------
+Hamming Loss                              0.0304
+Precision (Micro-averaged)                0.7139
+Recall (Micro-averaged)                   0.4498
+F1-Score (Micro-averaged)                 0.5519
+Precision (Macro-averaged)                0.6160
+Recall (Macro-averaged)                   0.3807
+F1-Score (Macro-averaged)                 0.4477
+AUC-ROC (Macro-averaged)                  0.9274
+
+================================================================================
+ PER-EMOTION PERFORMANCE METRICS
+================================================================================
+
+Emotion                  F1-Score    Precision       Recall      AUC-ROC    Support
+--------------------------------------------------------------------------------
+admiration                 0.6632       0.7063       0.6250       0.9455        504
+amusement                  0.8229       0.8276       0.8182       0.9741        264
+anger                      0.4675       0.6545       0.3636       0.9285        198
+annoyance                  0.0302       0.4545       0.0156       0.8573        320
+approval                   0.2729       0.7838       0.1652       0.8340        351
+caring                     0.4078       0.5915       0.3111       0.9317        135
+confusion                  0.4340       0.6220       0.3333       0.9490        153
+curiosity                  0.3282       0.6038       0.2254       0.9604        284
+desire                     0.4812       0.6400       0.3855       0.9553         83
+disappointment             0.1618       0.6364       0.0927       0.8774        151
+disapproval                0.2803       0.5000       0.1948       0.9019        267
+disgust                    0.4681       0.6769       0.3577       0.9467        123
+embarrassment              0.4667       0.6087       0.3784       0.9087         37
+excitement                 0.4483       0.5493       0.3786       0.9329        103
+fear                       0.6471       0.7586       0.5641       0.9611         78
+gratitude                  0.9152       0.9428       0.8892       0.9929        352
+grief                      0.0000       0.0000       0.0000       0.8907          6
+joy                        0.5836       0.6833       0.5093       0.9551        161
+love                       0.7992       0.8043       0.7941       0.9840        238
+nervousness                0.2222       0.3077       0.1739       0.9845         23
+optimism                   0.5351       0.7080       0.4301       0.9377        186
+pride                      0.4615       0.6000       0.3750       0.8552         16
+realization                0.1850       0.5714       0.1103       0.8111        145
+relief                     0.1429       0.3333       0.0909       0.9806         11
+remorse                    0.6316       0.6207       0.6429       0.9778         56
+sadness                    0.5537       0.7791       0.4295       0.9533        156
+surprise                   0.5328       0.5847       0.4894       0.9487        141
+neutral                    0.5939       0.6995       0.5159       0.8314       1787
+
+================================================================================
+ SUMMARY STATISTICS
+================================================================================
+
+Statistic                                                 Value
+--------------------------------------------------------------------------------
+Test Samples                                               5427
+Total Emotion Classes                                        28
+Classification Threshold                                   0.50
+Total True Labels (Test Set)                               6329
+Total Predicted Labels                                     3988
+Avg True Labels per Sample                                 1.17
+Avg Predicted Labels per Sample                            0.73
+
+================================================================================
+ EVALUATION COMPLETE
+================================================================================

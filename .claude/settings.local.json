@@ -15,7 +15,9 @@
       "Bash(python -m pip install:*)",
       "Bash(./venv/Scripts/python.exe:*)",
       "Bash(python3:*)",
-      "Bash(python test_flask_models.py:*)"
+      "Bash(python test_flask_models.py:*)",
+      "Bash(pkill:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []

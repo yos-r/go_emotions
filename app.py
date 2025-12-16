@@ -163,6 +163,57 @@ def evaluate_model(model_name):
         print(f"Evaluating {model_name.upper()} model on test data...")
         print(f"{'='*70}")
 
+        # Special handling for BERT: load pre-calculated metrics from bert.txt
+        if model_name == 'bert':
+            print("Loading pre-calculated BERT metrics from bert.txt...")
+            bert_results_path = 'bert.txt'
+
+            if not os.path.exists(bert_results_path):
+                return jsonify({'error': 'BERT results file (bert.txt) not found'}), 500
+
+            # Parse bert.txt file
+            with open(bert_results_path, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+
+            # Extract overall metrics (lines 24-31)
+            metrics = {
+                'hamming_loss': float(lines[23].split()[2]),  # Line 24: Hamming Loss
+                'precision_micro': float(lines[24].split()[2]),  # Line 25: Precision (Micro)
+                'recall_micro': float(lines[25].split()[2]),  # Line 26: Recall (Micro)
+                'f1_micro': float(lines[26].split()[2]),  # Line 27: F1-Score (Micro)
+                'precision_macro': float(lines[27].split()[2]),  # Line 28: Precision (Macro)
+                'recall_macro': float(lines[28].split()[2]),  # Line 29: Recall (Macro)
+                'f1_macro': float(lines[29].split()[2]),  # Line 30: F1-Score (Macro)
+                'auc_roc_macro': float(lines[30].split()[2]),  # Line 31: AUC-ROC (Macro)
+                'threshold': 0.5
+            }
+
+            # Extract per-emotion metrics (lines 39-66)
+            per_emotion_metrics = {}
+            for i in range(39, 67):  # Lines 39-66 contain emotion metrics
+                parts = lines[i-1].split()
+                if len(parts) >= 6:
+                    emotion = parts[0]
+                    per_emotion_metrics[emotion] = {
+                        'f1': float(parts[1]),
+                        'precision': float(parts[2]),
+                        'recall': float(parts[3])
+                    }
+
+            print(f"\nBERT evaluation loaded from file!")
+            print(f"  Hamming Loss: {metrics['hamming_loss']:.4f}")
+            print(f"  AUC-ROC: {metrics['auc_roc_macro']:.4f}")
+            print(f"  F1-Micro: {metrics['f1_micro']:.4f}")
+            print(f"  F1-Macro: {metrics['f1_macro']:.4f}")
+            print(f"{'='*70}\n")
+
+            return jsonify({
+                'model': model_name,
+                'metrics': metrics,
+                'per_emotion': per_emotion_metrics
+            })
+
+        # For non-BERT models: run normal evaluation
         # Load test data
         _, _, df_test = load_dataset()
         print(f"Loaded test data: {len(df_test)} samples")
@@ -226,7 +277,7 @@ def evaluate_model(model_name):
 
     except Exception as e:
         import traceback
-        print(f"\n❌ Error evaluating {model_name}:")
+        print(f"\nError evaluating {model_name}:")
         print(traceback.format_exc())
         return jsonify({'error': f"{model_name} evaluation failed: {str(e)}"}), 500
 

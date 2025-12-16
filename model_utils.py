@@ -188,9 +188,9 @@ class BertModelWrapper:
                 batch_predictions = probs.cpu().numpy()
                 all_predictions.append(batch_predictions)
 
-                # Print progress for large batches
-                if verbose and len(texts) > 100 and (batch_idx + 1) % 10 == 0:
-                    print(f"Processed {end_idx}/{len(texts)} samples...")
+                # Print progress for large batches (always show for >100 samples)
+                if len(texts) > 100 and (batch_idx + 1) % 10 == 0:
+                    print(f"  BERT Progress: {end_idx}/{len(texts)} samples ({100*end_idx/len(texts):.1f}%)")
 
         return np.vstack(all_predictions)
 
