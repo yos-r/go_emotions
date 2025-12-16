@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Home - GoEmotions Emotion Classification{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <div class="container text-center">
+        <h1 class="display-4 mb-3">
+            <i class="fas fa-brain"></i> GoEmotions Emotion Classification
+        </h1>
+        <p class="lead">
+            Multi-Label Text Emotion Detection using Deep Learning
+        </p>
+        <p class="mb-4">
+            Classify Reddit comments into 28 different emotion categories using state-of-the-art neural network architectures
+        </p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <!-- Data Visualization Card -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3" style="font-size: 3rem; color: #4a90e2;">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h5 class="card-title">Data Visualization</h5>
+                    <p class="card-text">
+                        Explore dataset statistics, emotion distributions, and class imbalance visualizations
+                    </p>
+                    <a href="/data-visualization" class="btn btn-primary">
+                        Explore Data <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Model Performance Card -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3" style="font-size: 3rem; color: #50c878;">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h5 class="card-title">Model Performance</h5>
+                    <p class="card-text">
+                        Evaluate and compare performance metrics for all trained models
+                    </p>
+                    <a href="/model-performance" class="btn btn-primary">
+                        View Metrics <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Predict Card -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3" style="font-size: 3rem; color: #f39c12;">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h5 class="card-title">Predict Emotions</h5>
+                    <p class="card-text">
+                        Enter your own text and see emotion predictions from all models
+                    </p>
+                    <a href="/predict" class="btn btn-primary">
+                        Try It Out <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Compare Models Card -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3" style="font-size: 3rem; color: #e74c3c;">
+                        <i class="fas fa-balance-scale"></i>
+                    </div>
+                    <h5 class="card-title">Compare Models</h5>
+                    <p class="card-text">
+                        Side-by-side comparison of all four model architectures
+                    </p>
+                    <a href="/compare" class="btn btn-primary">
+                        Compare <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Overview -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title">
+                        <i class="fas fa-info-circle"></i> Project Overview
+                    </h3>
+                    <p class="card-text">
+                        This project implements a multi-label emotion classification system using the <strong>GoEmotions dataset</strong>,
+                        which contains 58,000 Reddit comments labeled with 28 different emotion categories.
+                        The challenge involves handling class imbalance and multi-label classification where each text can express multiple emotions simultaneously.
+                    </p>
+
+                    <div class="row mt-4">
+                        <div class="col-md-3">
+                            <div class="metric-card">
+                                <div class="metric-value">58,000</div>
+                                <div class="metric-label">Reddit Comments</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="metric-card">
+                                <div class="metric-value">28</div>
+                                <div class="metric-label">Emotion Categories</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="metric-card">
+                                <div class="metric-value">4</div>
+                                <div class="metric-label">Model Architectures</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="metric-card">
+                                <div class="metric-value">Multi-Label</div>
+                                <div class="metric-label">Classification</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Model Architectures -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title">
+                        <i class="fas fa-project-diagram"></i> Model Architectures
+                    </h3>
+
+                    <div class="row mt-4">
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-layer-group"></i> Model 1: Simple LSTM
+                                    </h5>
+                                    <p class="card-text">
+                                        <strong>Architecture:</strong> Embedding → LSTM → Dense<br>
+                                        <strong>Purpose:</strong> Baseline model for comparison<br>
+                                        <strong>Threshold:</strong> 0.3
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-network-wired"></i> Model 2: BiLSTM + Attention
+                                    </h5>
+                                    <p class="card-text">
+                                        <strong>Architecture:</strong> Embedding → BiLSTM → Attention → Dense<br>
+                                        <strong>Purpose:</strong> Bidirectional context with attention mechanism<br>
+                                        <strong>Threshold:</strong> 0.5
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-sitemap"></i> Model 3: CNN-BiLSTM + Attention
+                                    </h5>
+                                    <p class="card-text">
+                                        <strong>Architecture:</strong> Embedding → CNN → BiLSTM → Attention → Dense<br>
+                                        <strong>Purpose:</strong> Hybrid architecture combining CNN feature extraction with BiLSTM<br>
+                                        <strong>Threshold:</strong> 0.5
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-robot"></i> Model 4: BERT-base
+                                    </h5>
+                                    <p class="card-text">
+                                        <strong>Architecture:</strong> Pre-trained BERT with fine-tuning<br>
+                                        <strong>Purpose:</strong> Transfer learning with transformer architecture<br>
+                                        <strong>Framework:</strong> PyTorch + HuggingFace
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Emotions List -->
+    <div class="row mt-5 mb-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title">
+                        <i class="fas fa-smile"></i> 28 Emotion Categories
+                    </h3>
+                    <div class="mt-3">
+                        <span class="emotion-tag" style="background-color: #e3f2fd; color: #1976d2;">admiration</span>
+                        <span class="emotion-tag" style="background-color: #fff3e0; color: #f57c00;">amusement</span>
+                        <span class="emotion-tag" style="background-color: #ffebee; color: #c62828;">anger</span>
+                        <span class="emotion-tag" style="background-color: #fce4ec; color: #c2185b;">annoyance</span>
+                        <span class="emotion-tag" style="background-color: #e8f5e9; color: #388e3c;">approval</span>
+                        <span class="emotion-tag" style="background-color: #f3e5f5; color: #7b1fa2;">caring</span>
+                        <span class="emotion-tag" style="background-color: #fff9c4; color: #f9a825;">confusion</span>
+                        <span class="emotion-tag" style="background-color: #e0f2f1; color: #00796b;">curiosity</span>
+                        <span class="emotion-tag" style="background-color: #fce4ec; color: #ad1457;">desire</span>
+                        <span class="emotion-tag" style="background-color: #efebe9; color: #5d4037;">disappointment</span>
+                        <span class="emotion-tag" style="background-color: #ffccbc; color: #d84315;">disapproval</span>
+                        <span class="emotion-tag" style="background-color: #c5cae9; color: #303f9f;">disgust</span>
+                        <span class="emotion-tag" style="background-color: #ffcdd2; color: #b71c1c;">embarrassment</span>
+                        <span class="emotion-tag" style="background-color: #fff59d; color: #f57f17;">excitement</span>
+                        <span class="emotion-tag" style="background-color: #d7ccc8; color: #4e342e;">fear</span>
+                        <span class="emotion-tag" style="background-color: #c8e6c9; color: #2e7d32;">gratitude</span>
+                        <span class="emotion-tag" style="background-color: #cfd8dc; color: #455a64;">grief</span>
+                        <span class="emotion-tag" style="background-color: #fff9c4; color: #f9a825;">joy</span>
+                        <span class="emotion-tag" style="background-color: #f8bbd0; color: #c2185b;">love</span>
+                        <span class="emotion-tag" style="background-color: #d1c4e9; color: #512da8;">nervousness</span>
+                        <span class="emotion-tag" style="background-color: #b3e5fc; color: #0277bd;">optimism</span>
+                        <span class="emotion-tag" style="background-color: #dcedc8; color: #558b2f;">pride</span>
+                        <span class="emotion-tag" style="background-color: #ffe0b2; color: #e65100;">realization</span>
+                        <span class="emotion-tag" style="background-color: #c5e1a5; color: #689f38;">relief</span>
+                        <span class="emotion-tag" style="background-color: #ffccbc; color: #bf360c;">remorse</span>
+                        <span class="emotion-tag" style="background-color: #b0bec5; color: #37474f;">sadness</span>
+                        <span class="emotion-tag" style="background-color: #fff59d; color: #f57f17;">surprise</span>
+                        <span class="emotion-tag" style="background-color: #eceff1; color: #546e7a;">neutral</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+
+{% block title %}Predict Emotions - GoEmotions{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <div class="container text-center">
+        <h1 class="display-4">
+            <i class="fas fa-brain"></i> Predict Emotions
+        </h1>
+        <p class="lead">
+            Enter text and see emotion predictions from all models
+        </p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">
+                        <i class="fas fa-keyboard"></i> Enter Your Text
+                    </h4>
+
+                    <form id="predictionForm">
+                        <div class="mb-3">
+                            <label for="inputText" class="form-label">Text to Analyze:</label>
+                            <textarea
+                                class="form-control"
+                                id="inputText"
+                                rows="4"
+                                placeholder="Type or paste a comment here... (e.g., 'I'm so happy and excited about this amazing news!')"
+                                required
+                            ></textarea>
+                            <div class="form-text">
+                                Enter any text to classify its emotions. The system will predict which of the 28 emotions are present.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-magic"></i> Predict Emotions
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-lg" id="exampleBtn">
+                                <i class="fas fa-lightbulb"></i> Load Example
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Loading Spinner -->
+                    <div class="loading" id="loading">
+                        <div class="spinner"></div>
+                        <p class="mt-3">Analyzing emotions...</p>
+                    </div>
+
+                    <!-- Results Container -->
+                    <div id="results" style="display: none;">
+                        <hr class="my-4">
+                        <h4 class="mb-4">
+                            <i class="fas fa-chart-pie"></i> Prediction Results
+                        </h4>
+
+                        <!-- Model Tabs -->
+                        <ul class="nav nav-pills mb-3" id="modelTabs" role="tablist">
+                            {% for model in models %}
+                            <li class="nav-item" role="presentation">
+                                <button
+                                    class="nav-link {% if loop.first %}active{% endif %}"
+                                    id="{{ model }}-tab"
+                                    data-bs-toggle="pill"
+                                    data-bs-target="#{{ model }}-content"
+                                    type="button"
+                                    role="tab"
+                                >
+                                    {{ model|upper }}
+                                </button>
+                            </li>
+                            {% endfor %}
+                        </ul>
+
+                        <!-- Model Results -->
+                        <div class="tab-content" id="modelTabContent">
+                            {% for model in models %}
+                            <div
+                                class="tab-pane fade {% if loop.first %}show active{% endif %}"
+                                id="{{ model }}-content"
+                                role="tabpanel"
+                            >
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ model|upper }} Model Predictions</h5>
+
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h6>Detected Emotions (Above Threshold):</h6>
+                                                <div id="{{ model }}-predicted" class="mb-3"></div>
+
+                                                <p class="text-muted">
+                                                    <small>Threshold: <span id="{{ model }}-threshold"></span></small>
+                                                </p>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <h6>Top 5 Emotions by Probability:</h6>
+                                                <div id="{{ model }}-top"></div>
+                                            </div>
+                                        </div>
+
+                                        <div class="mt-3">
+                                            <h6>All Emotion Scores:</h6>
+                                            <div id="{{ model }}-chart"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Comparison -->
+                        <div class="card mt-4">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-balance-scale"></i> Model Comparison
+                                </h5>
+                                <div id="comparisonTable"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const exampleTexts = [
+        "I'm so happy and excited about this amazing news!",
+        "This is absolutely disgusting and makes me angry.",
+        "I'm really confused and not sure what to think about this.",
+        "Thank you so much for your help! I really appreciate it.",
+        "I'm feeling sad and disappointed about how things turned out.",
+        "This is hilarious! I can't stop laughing!",
+        "I'm so nervous about the presentation tomorrow.",
+        "Wow, this is surprising! I didn't expect that at all."
+    ];
+
+    // Load example text
+    $('#exampleBtn').click(function() {
+        const randomText = exampleTexts[Math.floor(Math.random() * exampleTexts.length)];
+        $('#inputText').val(randomText);
+    });
+
+    // Handle form submission
+    $('#predictionForm').submit(function(e) {
+        e.preventDefault();
+
+        const text = $('#inputText').val().trim();
+        if (!text) {
+            alert('Please enter some text');
+            return;
+        }
+
+        // Show loading, hide results
+        $('#loading').show();
+        $('#results').hide();
+
+        // Make API call
+        $.ajax({
+            url: '/api/predict',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ text: text }),
+            success: function(data) {
+                displayResults(data);
+                $('#loading').hide();
+                $('#results').show();
+            },
+            error: function(xhr) {
+                alert('Error: ' + (xhr.responseJSON?.error || 'Unknown error'));
+                $('#loading').hide();
+            }
+        });
+    });
+
+    function displayResults(data) {
+        const emotionColors = {
+            'admiration': '#1976d2', 'amusement': '#f57c00', 'anger': '#c62828',
+            'annoyance': '#c2185b', 'approval': '#388e3c', 'caring': '#7b1fa2',
+            'confusion': '#f9a825', 'curiosity': '#00796b', 'desire': '#ad1457',
+            'disappointment': '#5d4037', 'disapproval': '#d84315', 'disgust': '#303f9f',
+            'embarrassment': '#b71c1c', 'excitement': '#f57f17', 'fear': '#4e342e',
+            'gratitude': '#2e7d32', 'grief': '#455a64', 'joy': '#f9a825',
+            'love': '#c2185b', 'nervousness': '#512da8', 'optimism': '#0277bd',
+            'pride': '#558b2f', 'realization': '#e65100', 'relief': '#689f38',
+            'remorse': '#bf360c', 'sadness': '#37474f', 'surprise': '#f57f17',
+            'neutral': '#546e7a'
+        };
+
+        for (const [modelName, modelData] of Object.entries(data)) {
+            // Predicted emotions
+            const predictedDiv = $(`#${modelName}-predicted`);
+            predictedDiv.empty();
+
+            if (modelData.predicted_emotions.length === 0) {
+                predictedDiv.append('<p class="text-muted">No emotions detected above threshold</p>');
+            } else {
+                modelData.predicted_emotions.forEach(emotion => {
+                    const score = modelData.all_scores[emotion];
+                    const color = emotionColors[emotion] || '#666';
+                    predictedDiv.append(`
+                        <span class="emotion-tag" style="background-color: ${color}20; color: ${color}; border: 2px solid ${color};">
+                            ${emotion} (${(score * 100).toFixed(1)}%)
+                        </span>
+                    `);
+                });
+            }
+
+            // Threshold
+            $(`#${modelName}-threshold`).text(modelData.threshold);
+
+            // Top 5 emotions
+            const topDiv = $(`#${modelName}-top`);
+            topDiv.empty();
+            const topList = $('<ul class="list-group"></ul>');
+
+            Object.entries(modelData.top_emotions).forEach(([emotion, score]) => {
+                const color = emotionColors[emotion] || '#666';
+                topList.append(`
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>${emotion}</span>
+                        <span class="badge rounded-pill" style="background-color: ${color};">
+                            ${(score * 100).toFixed(2)}%
+                        </span>
+                    </li>
+                `);
+            });
+            topDiv.append(topList);
+
+            // All emotions chart
+            const emotions = Object.keys(modelData.all_scores);
+            const scores = Object.values(modelData.all_scores);
+            const colors = emotions.map(e => emotionColors[e] || '#666');
+
+            const trace = {
+                x: emotions,
+                y: scores,
+                type: 'bar',
+                marker: { color: colors }
+            };
+
+            const layout = {
+                title: 'All Emotion Probabilities',
+                xaxis: { tickangle: -45 },
+                yaxis: { title: 'Probability', range: [0, 1] },
+                height: 400
+            };
+
+            Plotly.newPlot(`${modelName}-chart`, [trace], layout);
+        }
+
+        // Comparison table
+        createComparisonTable(data);
+    }
+
+    function createComparisonTable(data) {
+        const comparisonDiv = $('#comparisonTable');
+        comparisonDiv.empty();
+
+        // Get all unique emotions across all models
+        const allEmotions = new Set();
+        Object.values(data).forEach(modelData => {
+            modelData.predicted_emotions.forEach(e => allEmotions.add(e));
+        });
+
+        if (allEmotions.size === 0) {
+            comparisonDiv.append('<p class="text-muted">No emotions detected by any model</p>');
+            return;
+        }
+
+        const table = $('<table class="table table-bordered table-hover"></table>');
+        const thead = $('<thead><tr><th>Emotion</th></tr></thead>');
+
+        // Add model columns
+        Object.keys(data).forEach(model => {
+            thead.find('tr').append(`<th>${model.toUpperCase()}</th>`);
+        });
+        table.append(thead);
+
+        const tbody = $('<tbody></tbody>');
+
+        // Add rows for each emotion
+        Array.from(allEmotions).sort().forEach(emotion => {
+            const row = $(`<tr><td><strong>${emotion}</strong></td></tr>`);
+
+            Object.values(data).forEach(modelData => {
+                const score = modelData.all_scores[emotion];
+                const isPredicted = modelData.predicted_emotions.includes(emotion);
+                const cellClass = isPredicted ? 'table-success' : '';
+                row.append(`<td class="${cellClass}">${(score * 100).toFixed(2)}%</td>`);
+            });
+
+            tbody.append(row);
+        });
+
+        table.append(tbody);
+        comparisonDiv.append(table);
+    }
+</script>
+{% endblock %}

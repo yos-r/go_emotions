@@ -22,8 +22,16 @@ jupyter>=1.0.0
 ipykernel>=6.25.0
 notebook>=7.0.0
 
-# Optional: For interactive demo
-# streamlit>=1.25.0
+# Flask Web Framework
+flask>=2.3.0
+werkzeug>=2.3.0
+
+# Plotly for Interactive Visualizations
+plotly>=5.14.0
 
 # Text Processing Utilities
 nltk>=3.8.0
+
+# PyTorch (for BERT model)
+torch>=2.0.0
+torchvision>=0.15.0

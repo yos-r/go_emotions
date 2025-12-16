@@ -13,7 +13,9 @@
       "Bash(tee:*)",
       "Bash(..venvScriptsactivate)",
       "Bash(python -m pip install:*)",
-      "Bash(./venv/Scripts/python.exe:*)"
+      "Bash(./venv/Scripts/python.exe:*)",
+      "Bash(python3:*)",
+      "Bash(python test_flask_models.py:*)"
     ],
     "deny": [],
     "ask": []
