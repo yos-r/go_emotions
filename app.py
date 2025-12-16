@@ -346,50 +346,7 @@ def predict():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/compare')
-def compare_page():
-    """Model comparison page"""
-    return render_template('compare.html', models=list(models.keys()))
-
-
-@app.route('/api/compare-models', methods=['POST'])
-def compare_models():
-    """Compare all models on sample texts"""
-    try:
-        # Load a sample of test data
-        _, _, df_test = load_dataset()
-        sample_size = min(100, len(df_test))
-        df_sample = df_test.sample(n=sample_size, random_state=42)
-
-        # Preprocess
-        from model_utils import preprocess_for_prediction
-
-        comparison_results = {}
-
-        for model_name, model in models.items():
-            # Preprocess for each model
-            is_bert = model_name == 'bert'
-            X_sample, Y_sample = preprocess_for_prediction(df_sample, tokenizer, for_bert=is_bert)
-
-            # Predict
-            Y_pred = model.predict(X_sample, verbose=0)
-            threshold = 0.3 if model_name == 'lstm' else 0.5
-            Y_pred_binary = (Y_pred > threshold).astype(int)
-
-            # Calculate metrics
-            from sklearn.metrics import hamming_loss, f1_score, roc_auc_score
-
-            comparison_results[model_name] = {
-                'hamming_loss': float(hamming_loss(Y_sample, Y_pred_binary)),
-                'f1_micro': float(f1_score(Y_sample, Y_pred_binary, average='micro')),
-                'f1_macro': float(f1_score(Y_sample, Y_pred_binary, average='macro')),
-                'auc_roc': float(roc_auc_score(Y_sample, Y_pred, average='macro'))
-            }
-
-        return jsonify(comparison_results)
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+# Compare models functionality removed
 
 
 if __name__ == '__main__':

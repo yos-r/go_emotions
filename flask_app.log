@@ -614,3 +614,49 @@ C:\Users\yosrb\Downloads\GOEMOTION\venv\Lib\site-packages\sklearn\metrics\_ranki
 C:\Users\yosrb\Downloads\GOEMOTION\venv\Lib\site-packages\sklearn\metrics\_ranking.py:442: UndefinedMetricWarning: Only one class is present in y_true. ROC AUC score is not defined in that case.
   warnings.warn(
 INFO:werkzeug:127.0.0.1 - - [16/Dec/2025 15:45:56] "POST /api/compare-models HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [16/Dec/2025 15:52:43] "POST /api/predict HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [16/Dec/2025 15:52:57] "GET /compare HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [16/Dec/2025 15:52:59] "GET /predict HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [16/Dec/2025 15:53:01] "GET /model-performance HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [16/Dec/2025 15:53:03] "GET /data-visualization HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'c:\\Users\\yosrb\\Downloads\\GOEMOTION\\app.py', reloading
+Predictions complete! Shape: (5427, 28)
+
+Evaluation complete for cnn_bilstm_attention!
+  Hamming Loss: 0.0370
+  AUC-ROC: 0.8088
+  F1-Micro: 0.3665
+  F1-Macro: 0.2535
+======================================================================
+
+
+======================================================================
+Evaluating BERT model on test data...
+======================================================================
+Loading pre-calculated BERT metrics from bert.txt...
+
+BERT evaluation loaded from file!
+  Hamming Loss: 0.0304
+  AUC-ROC: 0.9274
+  F1-Micro: 0.5519
+  F1-Macro: 0.4477
+======================================================================
+
+Exception in thread Thread-1 (serve_forever):
+INFO:werkzeug: * Restarting with stat
+2025-12-16 15:58:45.087882: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2025-12-16 15:59:28.733383: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2025-12-16 16:00:22.318926: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE3 SSE4.1 SSE4.2 AVX AVX2 AVX_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+WARNING:absl:Compiled the loaded model, but the compiled metrics have yet to be built. `model.compile_metrics` will be empty until you train or evaluate the model.
+WARNING:tensorflow:From C:\Users\yosrb\Downloads\GOEMOTION\venv\Lib\site-packages\keras\src\backend\tensorflow\core.py:232: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+WARNING:tensorflow:From C:\Users\yosrb\Downloads\GOEMOTION\venv\Lib\site-packages\keras\src\backend\tensorflow\core.py:232: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 139-024-183
+INFO:werkzeug:127.0.0.1 - - [16/Dec/2025 16:13:43] "GET /data-visualization HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [16/Dec/2025 16:14:02] "GET /data-visualization HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [16/Dec/2025 16:14:09] "GET /predict HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [16/Dec/2025 16:14:22] "POST /api/predict HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [16/Dec/2025 16:21:34] "POST /api/predict HTTP/1.1" 200 -
