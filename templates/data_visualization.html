@@ -3,167 +3,133 @@
 {% block title %}Data Visualization - GoEmotions{% endblock %}
 
 {% block content %}
-<div class="hero">
-    <div class="container text-center">
-        <h1 class="display-4">
-            <i class="fas fa-chart-bar"></i> Data Visualization
-        </h1>
-        <p class="lead">
-            Explore the GoEmotions dataset statistics and distributions
-        </p>
+<!-- Page Header -->
+<div class="page-header">
+    <h1><i class="fas fa-chart-bar"></i> Data Visualization</h1>
+    <p>Explore the GoEmotions dataset statistics and distributions</p>
+</div>
+
+<!-- Dataset Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="metric-card">
+            <div class="metric-value">{{ "{:,}".format(stats.splits.train) }}</div>
+            <div class="metric-label">Training Samples</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="metric-card">
+            <div class="metric-value">{{ "{:,}".format(stats.splits.dev) }}</div>
+            <div class="metric-label">Validation Samples</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="metric-card">
+            <div class="metric-value">{{ "{:,}".format(stats.splits.test) }}</div>
+            <div class="metric-label">Test Samples</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="metric-card">
+            <div class="metric-value">{{ "{:,}".format(stats.splits.total) }}</div>
+            <div class="metric-label">Total Samples</div>
+        </div>
     </div>
 </div>
 
-<div class="container">
-    <!-- Dataset Statistics -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <h3 class="card-title">
-                        <i class="fas fa-database"></i> Dataset Statistics
-                    </h3>
-
-                    <div class="row mt-4">
-                        <div class="col-md-3">
-                            <div class="metric-card">
-                                <div class="metric-value">{{ "{:,}".format(stats.splits.train) }}</div>
-                                <div class="metric-label">Training Samples</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="metric-card">
-                                <div class="metric-value">{{ "{:,}".format(stats.splits.dev) }}</div>
-                                <div class="metric-label">Validation Samples</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="metric-card">
-                                <div class="metric-value">{{ "{:,}".format(stats.splits.test) }}</div>
-                                <div class="metric-label">Test Samples</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="metric-card">
-                                <div class="metric-value">{{ "{:,}".format(stats.splits.total) }}</div>
-                                <div class="metric-label">Total Samples</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mt-3">
-                        <div class="col-md-4">
-                            <div class="metric-card">
-                                <div class="metric-value">{{ "%.1f"|format(stats.multi_label_stats.avg_labels_per_sample) }}</div>
-                                <div class="metric-label">Avg Labels per Sample</div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="metric-card">
-                                <div class="metric-value">{{ "%.1f"|format(stats.text_stats.avg_text_length) }}</div>
-                                <div class="metric-label">Avg Text Length (chars)</div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="metric-card">
-                                <div class="metric-value">{{ "%.0f"|format(stats.imbalance_ratio) }}:1</div>
-                                <div class="metric-label">Class Imbalance Ratio</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Dataset Split Visualization -->
-    <div class="row mb-4">
+<!-- Multi-Label Statistics -->
+<div class="content-section">
+    <h3 class="section-title">
+        <i class="fas fa-info-circle"></i> Multi-Label Statistics
+    </h3>
+    <div class="row">
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title">Dataset Split Distribution</h4>
-                    <div id="splitChart"></div>
-                </div>
-            </div>
+            <p><strong>Average Labels per Sample:</strong> {{ "%.2f"|format(stats.multi_label_stats.avg_labels_per_sample) }}</p>
+            <p><strong>Max Labels per Sample:</strong> {{ stats.multi_label_stats.max_labels }}</p>
         </div>
-
-        <!-- Labels per Sample -->
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title">Labels per Sample Distribution</h4>
-                    <div id="labelsPerSampleChart"></div>
-                </div>
+            <p><strong>Samples with No Labels:</strong> {{ stats.multi_label_stats.samples_with_no_label }}</p>
+            <p><strong>Samples with Multiple Labels:</strong> {{ stats.multi_label_stats.samples_with_multiple_labels }}</p>
+        </div>
+    </div>
+</div>
+
+<!-- Visualizations -->
+<div class="row mb-4">
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                Dataset Split Distribution
+            </div>
+            <div class="card-body">
+                <div id="splitChart"></div>
             </div>
         </div>
     </div>
 
-    <!-- Emotion Distribution -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title">Emotion Distribution in Training Data</h4>
-                    <div id="distributionChart"></div>
-                </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                Labels per Sample Distribution
+            </div>
+            <div class="card-body">
+                <div id="labelsPerSampleChart"></div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Class Imbalance -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title">Class Imbalance (Log Scale)</h4>
-                    <p class="text-muted">
-                        Most common: <strong>{{ stats.most_common_emotion }}</strong> |
-                        Least common: <strong>{{ stats.least_common_emotion }}</strong>
-                    </p>
-                    <div id="imbalanceChart"></div>
-                </div>
-            </div>
-        </div>
-    </div>
+<!-- Emotion Distribution -->
+<div class="content-section">
+    <h4 class="section-title">
+        <i class="fas fa-chart-area"></i> Emotion Distribution in Training Data
+    </h4>
+    <div id="distributionChart"></div>
+</div>
 
-    <!-- Text Statistics -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title">
-                        <i class="fas fa-align-left"></i> Text Statistics
-                    </h4>
+<!-- Class Imbalance -->
+<div class="content-section">
+    <h4 class="section-title">
+        <i class="fas fa-balance-scale"></i> Class Imbalance (Log Scale)
+    </h4>
+    <p class="text-muted">
+        Most common: <strong>{{ stats.most_common_emotion }}</strong> |
+        Least common: <strong>{{ stats.least_common_emotion }}</strong>
+    </p>
+    <div id="imbalanceChart"></div>
+</div>
 
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Metric</th>
-                                    <th>Minimum</th>
-                                    <th>Average</th>
-                                    <th>Maximum</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td><strong>Text Length (characters)</strong></td>
-                                    <td>{{ stats.text_stats.min_text_length }}</td>
-                                    <td>{{ "%.1f"|format(stats.text_stats.avg_text_length) }}</td>
-                                    <td>{{ stats.text_stats.max_text_length }}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Word Count</strong></td>
-                                    <td>{{ stats.text_stats.min_word_count }}</td>
-                                    <td>{{ "%.1f"|format(stats.text_stats.avg_word_count) }}</td>
-                                    <td>{{ stats.text_stats.max_word_count }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
+<!-- Text Statistics -->
+<div class="content-section">
+    <h4 class="section-title">
+        <i class="fas fa-align-left"></i> Text Statistics
+    </h4>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>Minimum</th>
+                    <th>Average</th>
+                    <th>Maximum</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Text Length (characters)</strong></td>
+                    <td>{{ stats.text_stats.min_text_length }}</td>
+                    <td>{{ "%.1f"|format(stats.text_stats.avg_text_length) }}</td>
+                    <td>{{ stats.text_stats.max_text_length }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Word Count</strong></td>
+                    <td>{{ stats.text_stats.min_word_count }}</td>
+                    <td>{{ "%.1f"|format(stats.text_stats.avg_word_count) }}</td>
+                    <td>{{ stats.text_stats.max_word_count }}</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}

@@ -17,7 +17,8 @@
       "Bash(python3:*)",
       "Bash(python test_flask_models.py:*)",
       "Bash(pkill:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(python app.py:*)"
     ],
     "deny": [],
     "ask": []

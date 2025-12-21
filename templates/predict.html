@@ -3,25 +3,17 @@
 {% block title %}Predict Emotions - GoEmotions{% endblock %}
 
 {% block content %}
-<div class="hero">
-    <div class="container text-center">
-        <h1 class="display-4">
-            <i class="fas fa-brain"></i> Predict Emotions
-        </h1>
-        <p class="lead">
-            Enter text and see emotion predictions from all models
-        </p>
-    </div>
+<!-- Page Header -->
+<div class="page-header">
+    <h1><i class="fas fa-brain"></i> Predict Emotions</h1>
+    <p>Enter text and see emotion predictions from all trained models</p>
 </div>
 
-<div class="container">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title">
-                        <i class="fas fa-keyboard"></i> Enter Your Text
-                    </h4>
+<!-- Input Section -->
+<div class="content-section">
+    <h4 class="section-title">
+        <i class="fas fa-keyboard"></i> Enter Your Text
+    </h4>
 
                     <form id="predictionForm">
                         <div class="mb-3">
@@ -54,12 +46,14 @@
                         <p class="mt-3">Analyzing emotions...</p>
                     </div>
 
-                    <!-- Results Container -->
-                    <div id="results" style="display: none;">
-                        <hr class="my-4">
-                        <h4 class="mb-4">
-                            <i class="fas fa-chart-pie"></i> Prediction Results
-                        </h4>
+    <!-- Results Container -->
+    <div id="results" style="display: none;">
+</div>
+
+<div id="resultsSection" class="content-section" style="display: none;">
+    <h4 class="section-title">
+        <i class="fas fa-chart-pie"></i> Prediction Results
+    </h4>
 
                         <!-- Model Tabs -->
                         <ul class="nav nav-pills mb-3" id="modelTabs" role="tablist">
@@ -117,18 +111,13 @@
                             {% endfor %}
                         </div>
 
-                        <!-- Comparison -->
-                        <div class="card mt-4">
-                            <div class="card-body">
-                                <h5 class="card-title">
-                                    <i class="fas fa-balance-scale"></i> Model Comparison
-                                </h5>
-                                <div id="comparisonTable"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- Comparison -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <i class="fas fa-balance-scale"></i> Model Comparison
+        </div>
+        <div class="card-body">
+            <div id="comparisonTable"></div>
         </div>
     </div>
 </div>
@@ -176,7 +165,7 @@
             success: function(data) {
                 displayResults(data);
                 $('#loading').hide();
-                $('#results').show();
+                $('#resultsSection').show();
             },
             error: function(xhr) {
                 alert('Error: ' + (xhr.responseJSON?.error || 'Unknown error'));
