@@ -48,6 +48,55 @@
 <!-- Results Container -->
 <div id="resultsContainer"></div>
 
+<!-- LSTM Embedding Comparison Section -->
+<div id="lstmEmbeddingSection" style="display: none;">
+    <div class="content-section">
+        <h4 class="section-title">
+            <i class="fas fa-layer-group"></i> LSTM Embedding Type Comparison
+        </h4>
+        <p class="text-muted">
+            Comparing LSTM models with different embedding strategies: Learned (trainable), FastText, GloVe, and TF-IDF.
+        </p>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div id="lstmEmbeddingChart"></div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <h5>Embedding Comparison Table</h5>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="lstmEmbeddingTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Embedding Type</th>
+                                <th>Hamming Loss ↓</th>
+                                <th>AUC-ROC ↑</th>
+                                <th>F1-Micro ↑</th>
+                                <th>F1-Macro ↑</th>
+                                <th>Precision-Micro ↑</th>
+                                <th>Recall-Micro ↑</th>
+                                <th>Precision-Macro ↑</th>
+                                <th>Recall-Macro ↑</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lstmEmbeddingTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <h5>Key Insights</h5>
+                <div id="lstmInsights" class="alert alert-info"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Comparison Section -->
 <div id="comparisonSection" style="display: none;">
     <div class="content-section">
@@ -97,6 +146,7 @@
         $('#loading').show();
         $('#resultsContainer').empty();
         $('#comparisonSection').hide();
+        $('#lstmEmbeddingSection').hide();
 
         const models = {{ models|tojson }};
         let completed = 0;
@@ -125,6 +175,29 @@
         });
     });
 
+    // Show LSTM embedding comparison
+    function showLSTMEmbeddingComparison() {
+        $('#loading').show();
+        $('#resultsContainer').empty();
+        $('#comparisonSection').hide();
+        $('#lstmEmbeddingSection').hide();
+
+        $.ajax({
+            url: '/api/compare-lstm-embeddings',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({}),
+            success: function(data) {
+                $('#loading').hide();
+                displayLSTMEmbeddingComparison(data);
+            },
+            error: function(xhr) {
+                alert('Error comparing LSTM embeddings: ' + (xhr.responseJSON?.error || 'Unknown error'));
+                $('#loading').hide();
+            }
+        });
+    }
+
     function evaluateModel(modelName) {
         $('#loading').show();
         $('#resultsContainer').empty();
@@ -151,6 +224,29 @@
     }
 
     function displayModelResults(data) {
+        // Add embedding selector for LSTM
+        const isLSTM = data.model === 'lstm';
+        const embeddingSelector = isLSTM ? `
+            <div class="alert alert-info mt-3">
+                <h6><i class="fas fa-layer-group"></i> Try Other Embeddings:</h6>
+                <p class="mb-2">Compare LSTM performance with different embedding strategies:</p>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-primary active" data-embedding="lstm">
+                        Learned (Current)
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary lstm-embedding-btn" data-embedding="lstm_fasttext">
+                        FastText
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary lstm-embedding-btn" data-embedding="lstm_glove">
+                        GloVe
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-info" id="compareLSTMEmbeddingsBtn-inline">
+                        <i class="fas fa-chart-bar"></i> Compare All
+                    </button>
+                </div>
+            </div>
+        ` : '';
+
         const resultCard = $(`
             <div class="row mb-4">
                 <div class="col-12">
@@ -159,6 +255,8 @@
                             <h4 class="card-title">
                                 <i class="fas fa-robot"></i> ${data.model.toUpperCase()} Model Results
                             </h4>
+
+                            ${embeddingSelector}
 
                             <!-- Overall Metrics -->
                             <div class="row mt-4">
@@ -224,6 +322,20 @@
 
         // Create per-emotion chart
         createPerEmotionChart(data);
+
+        // Add event handlers for LSTM embedding buttons
+        if (data.model === 'lstm') {
+            $('.lstm-embedding-btn').click(function() {
+                const embeddingModel = $(this).data('embedding');
+                $('.lstm-embedding-btn').removeClass('active');
+                $(this).addClass('active');
+                evaluateModel(embeddingModel);
+            });
+
+            $('#compareLSTMEmbeddingsBtn-inline').click(function() {
+                showLSTMEmbeddingComparison();
+            });
+        }
     }
 
     function createPerEmotionChart(data) {
@@ -312,6 +424,169 @@
             `);
             tbody.append(row);
         }
+    }
+
+    function displayLSTMEmbeddingComparison(data) {
+        $('#lstmEmbeddingSection').show();
+
+        const embeddingTypes = [];
+        const metricsData = {
+            'hamming_loss': [],
+            'auc_roc_macro': [],
+            'f1_micro': [],
+            'f1_macro': [],
+            'precision_micro': [],
+            'recall_micro': [],
+            'precision_macro': [],
+            'recall_macro': []
+        };
+
+        // Extract data
+        for (const [modelName, modelData] of Object.entries(data)) {
+            embeddingTypes.push(modelData.embedding_type);
+            Object.keys(metricsData).forEach(metric => {
+                metricsData[metric].push(modelData.metrics[metric]);
+            });
+        }
+
+        // Create comparison chart (grouped bar chart)
+        const traces = [
+            {
+                x: embeddingTypes,
+                y: metricsData.hamming_loss,
+                name: 'Hamming Loss (↓)',
+                type: 'bar',
+                marker: { color: '#e74c3c' }
+            },
+            {
+                x: embeddingTypes,
+                y: metricsData.auc_roc_macro,
+                name: 'AUC-ROC (↑)',
+                type: 'bar',
+                marker: { color: '#3498db' }
+            },
+            {
+                x: embeddingTypes,
+                y: metricsData.f1_micro,
+                name: 'F1-Micro (↑)',
+                type: 'bar',
+                marker: { color: '#2ecc71' }
+            },
+            {
+                x: embeddingTypes,
+                y: metricsData.f1_macro,
+                name: 'F1-Macro (↑)',
+                type: 'bar',
+                marker: { color: '#f39c12' }
+            }
+        ];
+
+        const layout = {
+            title: 'LSTM Embedding Type Performance Comparison',
+            xaxis: { title: 'Embedding Type' },
+            yaxis: { title: 'Score', range: [0, 1] },
+            barmode: 'group',
+            height: 500
+        };
+
+        Plotly.newPlot('lstmEmbeddingChart', traces, layout);
+
+        // Create comparison table
+        const tbody = $('#lstmEmbeddingTableBody');
+        tbody.empty();
+
+        // Find best and worst for each metric
+        const metricNames = ['hamming_loss', 'auc_roc_macro', 'f1_micro', 'f1_macro', 'precision_micro', 'recall_micro', 'precision_macro', 'recall_macro'];
+        const bestWorst = {};
+
+        metricNames.forEach(metric => {
+            const values = Object.values(data).map(d => d.metrics[metric]);
+            // For hamming_loss, lower is better. For others, higher is better
+            if (metric === 'hamming_loss') {
+                bestWorst[metric] = { best: Math.min(...values), worst: Math.max(...values) };
+            } else {
+                bestWorst[metric] = { best: Math.max(...values), worst: Math.min(...values) };
+            }
+        });
+
+        for (const [modelName, modelData] of Object.entries(data)) {
+            const metrics = modelData.metrics;
+            const row = $('<tr></tr>');
+
+            // Embedding type
+            row.append(`<td><strong>${modelData.embedding_type}</strong></td>`);
+
+            // Add metrics with highlighting
+            metricNames.forEach(metric => {
+                const value = metrics[metric];
+                const isBest = value === bestWorst[metric].best;
+                const isWorst = value === bestWorst[metric].worst;
+
+                let cellClass = '';
+                let badge = '';
+                if (isBest) {
+                    cellClass = 'table-success';
+                    badge = ' <span class="badge bg-success">Best</span>';
+                } else if (isWorst) {
+                    cellClass = 'table-danger';
+                    badge = ' <span class="badge bg-danger">Worst</span>';
+                }
+
+                row.append(`<td class="${cellClass}">${value.toFixed(4)}${badge}</td>`);
+            });
+
+            tbody.append(row);
+        }
+
+        // Generate insights
+        const insights = generateLSTMInsights(data, bestWorst);
+        $('#lstmInsights').html(insights);
+    }
+
+    function generateLSTMInsights(data, bestWorst) {
+        let insights = '<ul>';
+
+        // Find best overall model
+        const f1MacroScores = Object.entries(data).map(([name, d]) => ({
+            name: d.embedding_type,
+            score: d.metrics.f1_macro
+        }));
+        const bestModel = f1MacroScores.reduce((max, curr) => curr.score > max.score ? curr : max);
+
+        insights += `<li><strong>Best Overall Performance:</strong> ${bestModel.name} embedding achieves the highest F1-Macro score (${bestModel.score.toFixed(4)}), indicating better performance on rare emotion classes.</li>`;
+
+        // AUC-ROC comparison
+        const aucScores = Object.entries(data).map(([name, d]) => ({
+            name: d.embedding_type,
+            score: d.metrics.auc_roc_macro
+        }));
+        const bestAUC = aucScores.reduce((max, curr) => curr.score > max.score ? curr : max);
+        insights += `<li><strong>Best Discrimination:</strong> ${bestAUC.name} embedding shows the best AUC-ROC (${bestAUC.score.toFixed(4)}), indicating superior ability to distinguish between emotion classes.</li>`;
+
+        // Hamming Loss comparison
+        const hammingScores = Object.entries(data).map(([name, d]) => ({
+            name: d.embedding_type,
+            score: d.metrics.hamming_loss
+        }));
+        const bestHamming = hammingScores.reduce((min, curr) => curr.score < min.score ? curr : min);
+        insights += `<li><strong>Lowest Error Rate:</strong> ${bestHamming.name} embedding has the lowest Hamming Loss (${bestHamming.score.toFixed(4)}), meaning fewer incorrect label predictions.</li>`;
+
+        // Micro vs Macro comparison
+        const modelsList = Object.entries(data);
+        if (modelsList.length > 0) {
+            const avgMicroMacroGaps = modelsList.map(([name, d]) => ({
+                name: d.embedding_type,
+                gap: d.metrics.f1_micro - d.metrics.f1_macro
+            }));
+            const minGap = avgMicroMacroGaps.reduce((min, curr) => curr.gap < min.gap ? curr : min);
+            insights += `<li><strong>Most Balanced:</strong> ${minGap.name} embedding shows the smallest gap between F1-Micro and F1-Macro (${minGap.gap.toFixed(4)}), indicating more balanced performance across frequent and rare emotions.</li>`;
+        }
+
+        // General observations
+        insights += '<li><strong>Embedding Comparison:</strong> Pre-trained embeddings (FastText, GloVe) leverage semantic knowledge learned from large corpora, while learned embeddings adapt specifically to emotion classification. TF-IDF provides a simpler frequency-based representation.</li>';
+
+        insights += '</ul>';
+        return insights;
     }
 </script>
 {% endblock %}

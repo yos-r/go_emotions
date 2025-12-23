@@ -101,9 +101,31 @@
                                             </div>
                                         </div>
 
-                                        <div class="mt-3">
+                                        <div class="mt-4">
                                             <h6>All Emotion Scores:</h6>
                                             <div id="{{ model }}-chart"></div>
+                                        </div>
+
+                                        <!-- Explainability Section -->
+                                        <div class="mt-4">
+                                            <h6><i class="fas fa-lightbulb"></i> Explainability & Interpretation:</h6>
+                                            <div class="card bg-light">
+                                                <div class="card-body">
+                                                    <div id="{{ model }}-attention" class="mb-3">
+                                                        <strong>Word Importance Heatmap:</strong>
+                                                        <div id="{{ model }}-word-importance" class="mt-2"></div>
+                                                        <p class="text-muted small mt-2">
+                                                            <i class="fas fa-info-circle"></i> Words highlighted in red had more influence on the predictions.
+                                                            This visualization shows which parts of your text the model focused on.
+                                                        </p>
+                                                    </div>
+
+                                                    <div id="{{ model }}-key-phrases" class="mt-3">
+                                                        <strong>Key Influential Phrases:</strong>
+                                                        <div id="{{ model }}-phrases-list" class="mt-2"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -120,7 +142,84 @@
             <div id="comparisonTable"></div>
         </div>
     </div>
+
+    <!-- Model Agreement Analysis -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <i class="fas fa-microscope"></i> Model Agreement & Confidence Analysis
+        </div>
+        <div class="card-body">
+            <div id="agreementAnalysis"></div>
+
+            <div class="mt-4">
+                <h6><i class="fas fa-info-circle"></i> Interpretation Guide:</h6>
+                <div class="alert alert-info">
+                    <ul class="mb-0">
+                        <li><strong>High Agreement (All models agree):</strong> Strong confidence in the prediction</li>
+                        <li><strong>Partial Agreement (Some models agree):</strong> Moderate confidence, nuanced emotions present</li>
+                        <li><strong>Low Agreement (Models disagree):</strong> Text may contain mixed emotions or ambiguous content</li>
+                        <li><strong>Confidence Bars:</strong> Green = high confidence, Yellow = moderate, Red = low confidence</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LSTM Embedding Comparison -->
+    <div class="card mt-4" id="lstmEmbeddingCard" style="display: none;">
+        <div class="card-header">
+            <i class="fas fa-layer-group"></i> LSTM Embedding Type Comparison
+        </div>
+        <div class="card-body">
+            <p class="text-muted">Comparing predictions across different LSTM embedding strategies:</p>
+            <div id="lstmEmbeddingComparison"></div>
+        </div>
+    </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .word-importance {
+        display: inline-block;
+        padding: 2px 4px;
+        margin: 2px;
+        border-radius: 3px;
+        transition: all 0.3s;
+    }
+
+    .word-importance:hover {
+        transform: scale(1.1);
+        z-index: 10;
+    }
+
+    .phrase-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        margin: 0.3rem;
+        border-radius: 20px;
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        color: white;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .confidence-indicator {
+        display: inline-block;
+        width: 100px;
+        height: 8px;
+        background: #ecf0f1;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-left: 0.5rem;
+    }
+
+    .confidence-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #e74c3c, #f39c12, #2ecc71);
+        transition: width 0.3s;
+    }
+</style>
 {% endblock %}
 
 {% block extra_js %}
@@ -174,7 +273,14 @@
         });
     });
 
+    // Store current predictions globally for embedding switching
+    let currentPredictions = {};
+    let currentText = '';
+
     function displayResults(data) {
+        currentPredictions = data;
+        currentText = $('#inputText').val();
+
         const emotionColors = {
             'admiration': '#1976d2', 'amusement': '#f57c00', 'anger': '#c62828',
             'annoyance': '#c2185b', 'approval': '#388e3c', 'caring': '#7b1fa2',
@@ -189,6 +295,27 @@
         };
 
         for (const [modelName, modelData] of Object.entries(data)) {
+            // Add embedding selector for LSTM model
+            if (modelName === 'lstm') {
+                const embeddingSelector = $(`
+                    <div class="alert alert-info mb-3">
+                        <h6><i class="fas fa-layer-group"></i> Try Other Embeddings:</h6>
+                        <p class="mb-2 small">Compare predictions with different embedding strategies:</p>
+                        <div class="btn-group btn-group-sm" role="group" id="lstm-embedding-selector">
+                            <button type="button" class="btn btn-outline-primary active" data-embedding="lstm">
+                                Learned
+                            </button>
+                            <button type="button" class="btn btn-outline-primary lstm-predict-embedding-btn" data-embedding="lstm_fasttext">
+                                FastText
+                            </button>
+                            <button type="button" class="btn btn-outline-primary lstm-predict-embedding-btn" data-embedding="lstm_glove">
+                                GloVe
+                            </button>
+                        </div>
+                    </div>
+                `);
+                $(`#${modelName}-content .card-body`).prepend(embeddingSelector);
+            }
             // Predicted emotions
             const predictedDiv = $(`#${modelName}-predicted`);
             predictedDiv.empty();
@@ -248,10 +375,359 @@
             };
 
             Plotly.newPlot(`${modelName}-chart`, [trace], layout);
+
+            // Word importance visualization with LIME
+            visualizeWordImportanceWithLIME(modelName, modelData);
         }
 
         // Comparison table
         createComparisonTable(data);
+
+        // LSTM embedding comparison (only show if we have multiple LSTM models loaded)
+        displayLSTMEmbeddingComparisonPrediction(data);
+
+        // Add event handlers for LSTM embedding switching
+        $('.lstm-predict-embedding-btn').off('click').on('click', function() {
+            const embeddingModel = $(this).data('embedding');
+            switchLSTMEmbedding(embeddingModel);
+        });
+    }
+
+    function switchLSTMEmbedding(embeddingModel) {
+        // Update active button
+        $('#lstm-embedding-selector button').removeClass('active');
+        $(`#lstm-embedding-selector button[data-embedding="${embeddingModel}"]`).addClass('active');
+
+        // Make API call to get predictions for this embedding
+        $.ajax({
+            url: '/api/predict',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ text: currentText }),
+            success: function(data) {
+                if (data[embeddingModel]) {
+                    updateLSTMDisplay(embeddingModel, data[embeddingModel]);
+                } else {
+                    alert(`Model ${embeddingModel} not available`);
+                }
+            },
+            error: function(xhr) {
+                alert('Error: ' + (xhr.responseJSON?.error || 'Unknown error'));
+            }
+        });
+    }
+
+    function updateLSTMDisplay(modelName, modelData) {
+        const emotionColors = {
+            'admiration': '#1976d2', 'amusement': '#f57c00', 'anger': '#c62828',
+            'annoyance': '#c2185b', 'approval': '#388e3c', 'caring': '#7b1fa2',
+            'confusion': '#f9a825', 'curiosity': '#00796b', 'desire': '#ad1457',
+            'disappointment': '#5d4037', 'disapproval': '#d84315', 'disgust': '#303f9f',
+            'embarrassment': '#b71c1c', 'excitement': '#f57f17', 'fear': '#4e342e',
+            'gratitude': '#2e7d32', 'grief': '#455a64', 'joy': '#f9a825',
+            'love': '#c2185b', 'nervousness': '#512da8', 'optimism': '#0277bd',
+            'pride': '#558b2f', 'realization': '#e65100', 'relief': '#689f38',
+            'remorse': '#bf360c', 'sadness': '#37474f', 'surprise': '#f57f17',
+            'neutral': '#546e7a'
+        };
+
+        // Update the LSTM tab content with new embedding results
+        // Update predicted emotions
+        const predictedDiv = $('#lstm-predicted');
+        predictedDiv.empty();
+
+        if (modelData.predicted_emotions.length === 0) {
+            predictedDiv.append('<p class="text-muted">No emotions detected above threshold</p>');
+        } else {
+            modelData.predicted_emotions.forEach(emotion => {
+                const score = modelData.all_scores[emotion];
+                const color = emotionColors[emotion] || '#666';
+                predictedDiv.append(`
+                    <span class="emotion-tag" style="background-color: ${color}20; color: ${color}; border: 2px solid ${color};">
+                        ${emotion} (${(score * 100).toFixed(1)}%)
+                    </span>
+                `);
+            });
+        }
+
+        // Update threshold
+        $('#lstm-threshold').text(modelData.threshold);
+
+        // Update top 5 emotions
+        const topDiv = $('#lstm-top');
+        topDiv.empty();
+        const topList = $('<ul class="list-group"></ul>');
+
+        Object.entries(modelData.top_emotions).forEach(([emotion, score]) => {
+            const color = emotionColors[emotion] || '#666';
+            topList.append(`
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>${emotion}</span>
+                    <span class="badge rounded-pill" style="background-color: ${color};">
+                        ${(score * 100).toFixed(2)}%
+                    </span>
+                </li>
+            `);
+        });
+        topDiv.append(topList);
+
+        // Update chart
+        const emotions = Object.keys(modelData.all_scores);
+        const scores = Object.values(modelData.all_scores);
+        const colors = emotions.map(e => emotionColors[e] || '#666');
+
+        const trace = {
+            x: emotions,
+            y: scores,
+            type: 'bar',
+            marker: { color: colors }
+        };
+
+        const layout = {
+            title: 'All Emotion Probabilities',
+            xaxis: { tickangle: -45 },
+            yaxis: { title: 'Probability', range: [0, 1] },
+            height: 400
+        };
+
+        Plotly.newPlot('lstm-chart', [trace], layout);
+
+        // Update word importance
+        visualizeWordImportanceWithLIME(modelName, modelData);
+
+        // Update current predictions and refresh comparison
+        currentPredictions[modelName] = modelData;
+        createComparisonTable(currentPredictions);
+        displayLSTMEmbeddingComparisonPrediction(currentPredictions);
+    }
+
+    function visualizeWordImportanceWithLIME(modelName, modelData) {
+        const text = $('#inputText').val();
+        const wordImportanceDiv = $(`#${modelName}-word-importance`);
+        const phrasesDiv = $(`#${modelName}-phrases-list`);
+
+        // Show loading state
+        wordImportanceDiv.html('<p class="text-muted"><i class="fas fa-spinner fa-spin"></i> Generating LIME explanation...</p>');
+        phrasesDiv.html('');
+
+        // Skip BERT for now (needs different handling)
+        if (modelName === 'bert') {
+            wordImportanceDiv.html('<p class="text-muted">LIME explanation not available for BERT model</p>');
+            visualizeWordImportance(modelName, modelData);  // Fallback to heuristic
+            return;
+        }
+
+        // Call LIME API
+        $.ajax({
+            url: '/api/explain',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ text: text, model: modelName }),
+            success: function(limeData) {
+                displayLIMEExplanation(modelName, limeData, modelData);
+            },
+            error: function(xhr) {
+                console.error(`LIME explanation failed for ${modelName}:`, xhr.responseText);
+                // Fallback to heuristic method
+                wordImportanceDiv.html('<p class="text-warning"><i class="fas fa-exclamation-triangle"></i> LIME unavailable, using heuristic method</p>');
+                visualizeWordImportance(modelName, modelData);
+            }
+        });
+    }
+
+    function displayLIMEExplanation(modelName, limeData, modelData) {
+        const wordImportanceDiv = $(`#${modelName}-word-importance`);
+        const phrasesDiv = $(`#${modelName}-phrases-list`);
+        const topEmotionDiv = $(`#${modelName}-key-phrases`);
+
+        // Use LIME word importance scores
+        const wordImportance = limeData.word_importance;
+        const words = limeData.text.split(/\s+/);
+
+        // Get top predicted emotion scores from LIME
+        const topEmotions = Object.entries(modelData.all_scores)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3);
+
+        // Normalize scores to 0-1 range for visualization
+        const scores = words.map(word => wordImportance[word] || 0);
+        const maxScore = Math.max(...scores, 0.001);
+        const normalizedScores = scores.map(s => s / maxScore);
+
+        // Create LIME-based word heatmap
+        const wordElements = words.map((word, idx) => {
+            const score = normalizedScores[idx];
+            const intensity = Math.floor(score * 255);
+            const backgroundColor = `rgba(255, ${255 - intensity}, ${255 - intensity}, ${0.3 + score * 0.5})`;
+            const textColor = score > 0.7 ? '#fff' : '#333';
+
+            return `<span class="word-importance" style="background-color: ${backgroundColor}; color: ${textColor};"
+                         title="LIME Importance: ${(score * 100).toFixed(0)}%">${word}</span>`;
+        }).join(' ');
+
+        wordImportanceDiv.html(wordElements + '<p class="text-success small mt-2"><i class="fas fa-check-circle"></i> Powered by LIME (Local Interpretable Model-agnostic Explanations)</p>');
+
+        // Extract key phrases from LIME explanation
+        const limeExplanations = limeData.lime_explanation.explanations;
+        const keyPhrases = new Set();
+
+        for (const [emotion, expData] of Object.entries(limeExplanations)) {
+            // Get words with positive importance
+            expData.word_weights.forEach(([phrase, weight]) => {
+                if (Math.abs(weight) > 0.1) {  // Significant weight
+                    keyPhrases.add(phrase);
+                }
+            });
+        }
+
+        if (keyPhrases.size > 0) {
+            phrasesDiv.empty();
+            Array.from(keyPhrases).slice(0, 8).forEach(phrase => {
+                phrasesDiv.append(`<span class="phrase-badge">${phrase}</span>`);
+            });
+        } else {
+            phrasesDiv.html('<p class="text-muted small">No strongly influential phrases detected by LIME</p>');
+        }
+
+        // Add top emotion indicators with LIME predictions
+        topEmotionDiv.prepend(`
+            <div class="mb-3">
+                <strong>Top Detected Emotions (LIME Analysis):</strong>
+                <div class="mt-2">
+                    ${topEmotions.map(([emotion, score]) => {
+                        const limeScore = limeData.lime_explanation.base_predictions[emotion] || score;
+                        return `
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-primary" style="width: 120px;">${emotion}</span>
+                            <div class="confidence-indicator">
+                                <div class="confidence-bar" style="width: ${limeScore * 100}%"></div>
+                            </div>
+                            <span class="ms-2 small">${(limeScore * 100).toFixed(1)}%</span>
+                        </div>
+                    `}).join('')}
+                </div>
+                <p class="text-muted small mt-2">
+                    <i class="fas fa-info-circle"></i> LIME generates explanations by perturbing the input and observing model behavior changes.
+                </p>
+            </div>
+        `);
+    }
+
+    function visualizeWordImportance(modelName, modelData) {
+        const text = $('#inputText').val();
+        const words = text.split(/\s+/);
+
+        // Calculate word importance based on predicted emotions
+        const wordImportanceDiv = $(`#${modelName}-word-importance`);
+        wordImportanceDiv.empty();
+
+        // Get top predicted emotion scores
+        const topEmotions = Object.entries(modelData.all_scores)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3);
+
+        // Simple heuristic: words that appear in emotion-related contexts
+        const emotionKeywords = {
+            'happy': ['happy', 'joy', 'great', 'amazing', 'wonderful', 'excited', 'love'],
+            'sad': ['sad', 'disappointed', 'unhappy', 'depressed', 'miserable'],
+            'angry': ['angry', 'mad', 'furious', 'hate', 'disgusting', 'terrible'],
+            'fear': ['scared', 'afraid', 'nervous', 'anxious', 'worried'],
+            'surprise': ['wow', 'surprising', 'unexpected', 'shocked', 'amazing'],
+            'gratitude': ['thank', 'thanks', 'appreciate', 'grateful'],
+            'confusion': ['confused', 'unsure', 'puzzled', 'wondering']
+        };
+
+        // Assign importance scores to words
+        const wordScores = words.map(word => {
+            const lowerWord = word.toLowerCase().replace(/[^\w]/g, '');
+            let score = 0.3; // Base score
+
+            // Check if word matches any emotion keywords
+            for (const [emotion, keywords] of Object.entries(emotionKeywords)) {
+                if (keywords.some(kw => lowerWord.includes(kw))) {
+                    score = 0.9;
+                    break;
+                }
+            }
+
+            // Boost score for punctuation-heavy words (exclamation, question marks)
+            if (word.includes('!') || word.includes('?')) {
+                score = Math.min(score + 0.2, 1.0);
+            }
+
+            // Boost for capitalized words (emphasis)
+            if (word === word.toUpperCase() && word.length > 1) {
+                score = Math.min(score + 0.15, 1.0);
+            }
+
+            return score;
+        });
+
+        // Normalize scores
+        const maxScore = Math.max(...wordScores);
+        const normalizedScores = wordScores.map(s => s / maxScore);
+
+        // Create word heatmap
+        const wordElements = words.map((word, idx) => {
+            const score = normalizedScores[idx];
+            const intensity = Math.floor(score * 255);
+            const backgroundColor = `rgba(255, ${255 - intensity}, ${255 - intensity}, ${0.3 + score * 0.5})`;
+            const textColor = score > 0.7 ? '#fff' : '#333';
+
+            return `<span class="word-importance" style="background-color: ${backgroundColor}; color: ${textColor};"
+                         title="Importance: ${(score * 100).toFixed(0)}%">${word}</span>`;
+        }).join(' ');
+
+        wordImportanceDiv.html(wordElements);
+
+        // Extract key phrases (high-importance consecutive words)
+        const phrasesDiv = $(`#${modelName}-phrases-list`);
+        phrasesDiv.empty();
+
+        const keyPhrases = [];
+        let currentPhrase = [];
+
+        words.forEach((word, idx) => {
+            if (normalizedScores[idx] > 0.6) {
+                currentPhrase.push(word);
+            } else {
+                if (currentPhrase.length > 0) {
+                    keyPhrases.push(currentPhrase.join(' '));
+                    currentPhrase = [];
+                }
+            }
+        });
+
+        if (currentPhrase.length > 0) {
+            keyPhrases.push(currentPhrase.join(' '));
+        }
+
+        if (keyPhrases.length > 0) {
+            keyPhrases.forEach(phrase => {
+                phrasesDiv.append(`<span class="phrase-badge">${phrase}</span>`);
+            });
+        } else {
+            phrasesDiv.html('<p class="text-muted small">No strongly influential phrases detected</p>');
+        }
+
+        // Add top emotion indicators
+        const topEmotionDiv = $(`#${modelName}-key-phrases`);
+        topEmotionDiv.prepend(`
+            <div class="mb-3">
+                <strong>Top Detected Emotions:</strong>
+                <div class="mt-2">
+                    ${topEmotions.map(([emotion, score]) => `
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-primary" style="width: 120px;">${emotion}</span>
+                            <div class="confidence-indicator">
+                                <div class="confidence-bar" style="width: ${score * 100}%"></div>
+                            </div>
+                            <span class="ms-2 small">${(score * 100).toFixed(1)}%</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `);
     }
 
     function createComparisonTable(data) {
@@ -296,6 +772,276 @@
 
         table.append(tbody);
         comparisonDiv.append(table);
+
+        // Generate agreement analysis
+        analyzeModelAgreement(data);
+    }
+
+    function analyzeModelAgreement(data) {
+        const agreementDiv = $('#agreementAnalysis');
+        agreementDiv.empty();
+
+        // Get all predicted emotions across models
+        const emotionAgreement = {};
+        const modelCount = Object.keys(data).length;
+
+        Object.values(data).forEach(modelData => {
+            modelData.predicted_emotions.forEach(emotion => {
+                if (!emotionAgreement[emotion]) {
+                    emotionAgreement[emotion] = {
+                        count: 0,
+                        scores: [],
+                        models: []
+                    };
+                }
+                emotionAgreement[emotion].count++;
+                emotionAgreement[emotion].scores.push(modelData.all_scores[emotion]);
+                emotionAgreement[emotion].models.push(
+                    Object.keys(data).find(m => data[m] === modelData)
+                );
+            });
+        });
+
+        // Calculate overall agreement metrics
+        const totalPredictions = Object.values(emotionAgreement).reduce((sum, e) => sum + e.count, 0);
+        const unanimousEmotions = Object.entries(emotionAgreement).filter(([_, e]) => e.count === modelCount);
+        const partialEmotions = Object.entries(emotionAgreement).filter(([_, e]) => e.count > 1 && e.count < modelCount);
+        const singleEmotions = Object.entries(emotionAgreement).filter(([_, e]) => e.count === 1);
+
+        // Create agreement summary
+        const summaryHtml = `
+            <div class="row text-center mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <h3 class="mb-0">${unanimousEmotions.length}</h3>
+                            <small>Unanimous</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <h3 class="mb-0">${partialEmotions.length}</h3>
+                            <small>Partial Agreement</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body">
+                            <h3 class="mb-0">${singleEmotions.length}</h3>
+                            <small>Single Model Only</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <h3 class="mb-0">${((unanimousEmotions.length / Math.max(Object.keys(emotionAgreement).length, 1)) * 100).toFixed(0)}%</h3>
+                            <small>Agreement Rate</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h6 class="mt-4">Detailed Emotion Agreement:</h6>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Emotion</th>
+                            <th>Agreement</th>
+                            <th>Models</th>
+                            <th>Avg Confidence</th>
+                            <th>Confidence Range</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.entries(emotionAgreement)
+                            .sort((a, b) => b[1].count - a[1].count)
+                            .map(([emotion, info]) => {
+                                const agreementLevel = info.count === modelCount ? 'success' :
+                                                      info.count > 1 ? 'warning' : 'danger';
+                                const avgScore = info.scores.reduce((a, b) => a + b, 0) / info.scores.length;
+                                const minScore = Math.min(...info.scores);
+                                const maxScore = Math.max(...info.scores);
+                                const variance = info.scores.length > 1 ?
+                                    Math.sqrt(info.scores.reduce((sum, s) => sum + Math.pow(s - avgScore, 2), 0) / info.scores.length) : 0;
+
+                                return `
+                                    <tr class="table-${agreementLevel}">
+                                        <td><strong>${emotion}</strong></td>
+                                        <td>
+                                            <span class="badge bg-${agreementLevel}">${info.count}/${modelCount} models</span>
+                                        </td>
+                                        <td>
+                                            <small>${info.models.map(m => m.toUpperCase()).join(', ')}</small>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <span class="me-2">${(avgScore * 100).toFixed(1)}%</span>
+                                                <div class="confidence-indicator">
+                                                    <div class="confidence-bar" style="width: ${avgScore * 100}%"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <small>${(minScore * 100).toFixed(1)}% - ${(maxScore * 100).toFixed(1)}%
+                                            ${variance > 0.1 ? '<i class="fas fa-exclamation-triangle text-warning" title="High variance"></i>' : ''}
+                                            </small>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-3">
+                <h6>Prediction Reliability Insights:</h6>
+                <ul>
+                    ${unanimousEmotions.length > 0 ?
+                        `<li><strong>High Confidence:</strong> All models agree on: ${unanimousEmotions.map(([e]) => e).join(', ')}</li>` : ''}
+                    ${partialEmotions.length > 0 ?
+                        `<li><strong>Moderate Confidence:</strong> Some models detected: ${partialEmotions.map(([e]) => e).join(', ')}</li>` : ''}
+                    ${singleEmotions.length > 0 ?
+                        `<li><strong>Low Confidence:</strong> Only one model detected: ${singleEmotions.map(([e]) => e).join(', ')} - may be false positives</li>` : ''}
+                    ${Object.keys(emotionAgreement).length === 0 ?
+                        '<li class="text-muted">No emotions were detected above threshold by any model</li>' : ''}
+                </ul>
+            </div>
+        `;
+
+        agreementDiv.html(summaryHtml);
+    }
+
+    function displayLSTMEmbeddingComparisonPrediction(data) {
+        // Check if we have multiple LSTM models (include both lstm and lstm_* variants)
+        const lstmModels = Object.keys(data).filter(k => k === 'lstm' || k.startsWith('lstm_'));
+
+        if (lstmModels.length <= 1) {
+            $('#lstmEmbeddingCard').hide();
+            return;
+        }
+
+        $('#lstmEmbeddingCard').show();
+
+        const comparisonDiv = $('#lstmEmbeddingComparison');
+        comparisonDiv.empty();
+
+        // Create a table comparing LSTM embeddings
+        const table = $('<table class="table table-bordered table-hover"></table>');
+        const thead = $('<thead class="table-dark"><tr><th>Emotion</th></tr></thead>');
+
+        // Add embedding type columns
+        const embeddingNames = {
+            'lstm': 'Learned',
+            'lstm_fasttext': 'FastText',
+            'lstm_glove': 'GloVe',
+            'lstm_tfidf': 'TF-IDF'
+        };
+
+        lstmModels.forEach(model => {
+            thead.find('tr').append(`<th>${embeddingNames[model] || model.toUpperCase()}</th>`);
+        });
+        table.append(thead);
+
+        // Get all predicted emotions across LSTM models
+        const allEmotions = new Set();
+        lstmModels.forEach(model => {
+            data[model].predicted_emotions.forEach(e => allEmotions.add(e));
+        });
+
+        // If no emotions predicted, show message
+        if (allEmotions.size === 0) {
+            comparisonDiv.append('<p class="text-muted">No emotions detected above threshold by any LSTM model</p>');
+            return;
+        }
+
+        const tbody = $('<tbody></tbody>');
+
+        // Add rows for each emotion
+        Array.from(allEmotions).sort().forEach(emotion => {
+            const row = $(`<tr><td><strong>${emotion}</strong></td></tr>`);
+
+            lstmModels.forEach(model => {
+                const score = data[model].all_scores[emotion];
+                const isPredicted = data[model].predicted_emotions.includes(emotion);
+                const cellClass = isPredicted ? 'table-success' : '';
+                const badge = isPredicted ? ' <span class="badge bg-success">✓</span>' : '';
+                row.append(`<td class="${cellClass}">${(score * 100).toFixed(2)}%${badge}</td>`);
+            });
+
+            tbody.append(row);
+        });
+
+        table.append(tbody);
+        comparisonDiv.append(table);
+
+        // Add statistics
+        const statsDiv = $('<div class="mt-3"></div>');
+        statsDiv.append('<h6>Embedding Comparison Statistics:</h6>');
+        const statsList = $('<ul></ul>');
+
+        lstmModels.forEach(model => {
+            const modelName = embeddingNames[model] || model.toUpperCase();
+            const predCount = data[model].predicted_emotions.length;
+            const topEmotion = Object.entries(data[model].all_scores)
+                .sort((a, b) => b[1] - a[1])[0];
+
+            statsList.append(`
+                <li><strong>${modelName}:</strong>
+                    ${predCount} emotion${predCount !== 1 ? 's' : ''} detected |
+                    Top prediction: ${topEmotion[0]} (${(topEmotion[1] * 100).toFixed(1)}%)
+                </li>
+            `);
+        });
+
+        statsDiv.append(statsList);
+        comparisonDiv.append(statsDiv);
+
+        // Add insight about differences
+        const uniquePredictions = {};
+        lstmModels.forEach(model => {
+            data[model].predicted_emotions.forEach(emotion => {
+                if (!uniquePredictions[emotion]) {
+                    uniquePredictions[emotion] = [];
+                }
+                uniquePredictions[emotion].push(embeddingNames[model] || model);
+            });
+        });
+
+        const consensusEmotions = Object.entries(uniquePredictions)
+            .filter(([_, models]) => models.length === lstmModels.length)
+            .map(([emotion]) => emotion);
+
+        const divergentEmotions = Object.entries(uniquePredictions)
+            .filter(([_, models]) => models.length < lstmModels.length && models.length > 0)
+            .map(([emotion, models]) => ({ emotion, models }));
+
+        if (consensusEmotions.length > 0 || divergentEmotions.length > 0) {
+            const insightDiv = $('<div class="alert alert-info mt-3"></div>');
+            let insightHtml = '<h6><i class="fas fa-lightbulb"></i> Embedding Analysis:</h6><ul>';
+
+            if (consensusEmotions.length > 0) {
+                insightHtml += `<li><strong>Universal Agreement:</strong> All embedding types agree on: ${consensusEmotions.join(', ')}</li>`;
+            }
+
+            if (divergentEmotions.length > 0) {
+                insightHtml += '<li><strong>Embedding-Specific Predictions:</strong><ul>';
+                divergentEmotions.forEach(({ emotion, models }) => {
+                    insightHtml += `<li>${emotion}: detected by ${models.join(', ')}</li>`;
+                });
+                insightHtml += '</ul></li>';
+            }
+
+            insightHtml += '<li><strong>Interpretation:</strong> Differences across embeddings reveal how semantic representations affect emotion detection. Pre-trained embeddings (FastText, GloVe) capture broader linguistic patterns, while learned embeddings specialize for this task.</li>';
+
+            insightHtml += '</ul>';
+            insightDiv.html(insightHtml);
+            comparisonDiv.append(insightDiv);
+        }
     }
 </script>
 {% endblock %}

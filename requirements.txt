@@ -35,3 +35,7 @@ nltk>=3.8.0
 # PyTorch (for BERT model)
 torch>=2.0.0
 torchvision>=0.15.0
+
+# Explainability Libraries
+lime>=0.2.0.1
+shap>=0.42.0

@@ -235,7 +235,7 @@ def load_all_models():
         'weighted_binary_crossentropy': custom_loss
     }
 
-    # Model 1: Simple LSTM
+    # Model 1: Simple LSTM (default - learned embeddings)
     lstm_path = os.path.join(models_dir, 'modele_lstm_simple.h5')
     if os.path.exists(lstm_path):
         try:
@@ -243,6 +243,33 @@ def load_all_models():
             print(f"[OK] Loaded LSTM model from {lstm_path}")
         except Exception as e:
             print(f"[ERROR] Error loading LSTM: {e}")
+
+    # Model 1a: LSTM with FastText embeddings
+    lstm_fasttext_path = os.path.join(models_dir, 'modele_lstm_simple_fasttext.h5')
+    if os.path.exists(lstm_fasttext_path):
+        try:
+            models['lstm_fasttext'] = load_model(lstm_fasttext_path)
+            print(f"[OK] Loaded LSTM (FastText) model from {lstm_fasttext_path}")
+        except Exception as e:
+            print(f"[ERROR] Error loading LSTM (FastText): {e}")
+
+    # Model 1b: LSTM with GloVe embeddings
+    lstm_glove_path = os.path.join(models_dir, 'modele_lstm_simple_glove.h5')
+    if os.path.exists(lstm_glove_path):
+        try:
+            models['lstm_glove'] = load_model(lstm_glove_path)
+            print(f"[OK] Loaded LSTM (GloVe) model from {lstm_glove_path}")
+        except Exception as e:
+            print(f"[ERROR] Error loading LSTM (GloVe): {e}")
+
+    # Model 1c: LSTM with TF-IDF embeddings
+    # lstm_tfidf_path = os.path.join(models_dir, 'modele_lstm_simple_tf-idf.h5')
+    # if os.path.exists(lstm_tfidf_path):
+    #     try:
+    #         models['lstm_tfidf'] = load_model(lstm_tfidf_path)
+    #         print(f"[OK] Loaded LSTM (TF-IDF) model from {lstm_tfidf_path}")
+    #     except Exception as e:
+    #         print(f"[ERROR] Error loading LSTM (TF-IDF): {e}")
 
     # Model 2: BiLSTM with Attention
     bilstm_path = os.path.join(models_dir, 'modele_bilstm_attention_final.keras')

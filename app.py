@@ -27,6 +27,7 @@ from model_utils import (
     MAX_LEN
 )
 from data_loader import load_dataset, get_dataset_statistics
+from explainability_utils import EmotionExplainer
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'goemotion-secret-key-2024'
@@ -35,10 +36,11 @@ app.config['SECRET_KEY'] = 'goemotion-secret-key-2024'
 models = {}
 tokenizer = None
 dataset_stats = None
+explainers = {}  # LIME explainers for each model
 
 def initialize_app():
     """Initialize models, tokenizer, and dataset statistics"""
-    global models, tokenizer, dataset_stats
+    global models, tokenizer, dataset_stats, explainers
 
     print("Loading models...")
     models = load_all_models()
@@ -51,6 +53,12 @@ def initialize_app():
 
     print("Computing dataset statistics...")
     dataset_stats = get_dataset_statistics(df_train, df_dev, df_test)
+
+    print("Initializing LIME explainers...")
+    for model_name, model in models.items():
+        if model_name != 'bert':  # Skip BERT for now (different tokenization)
+            explainers[model_name] = EmotionExplainer(model, tokenizer, model_name)
+            print(f"  ✓ Created explainer for {model_name}")
 
     print("App initialized successfully!")
 
@@ -149,7 +157,9 @@ def data_visualization():
 @app.route('/model-performance')
 def model_performance():
     """Display model performance metrics and comparisons"""
-    return render_template('model_performance.html', models=list(models.keys()))
+    # Filter out LSTM embedding variants - they'll be shown within LSTM
+    main_models = [m for m in models.keys() if not (m.startswith('lstm_'))]
+    return render_template('model_performance.html', models=main_models)
 
 
 @app.route('/api/evaluate-model/<model_name>', methods=['POST'])
@@ -238,7 +248,8 @@ def evaluate_model(model_name):
         )
 
         # Determine threshold based on model
-        threshold = 0.3 if model_name == 'lstm' else 0.5
+        # All LSTM variants use 0.3 threshold
+        threshold = 0.3 if model_name.startswith('lstm') else 0.5
         Y_pred_binary = (Y_pred_proba > threshold).astype(int)
 
         metrics = {
@@ -285,7 +296,9 @@ def evaluate_model(model_name):
 @app.route('/predict')
 def predict_page():
     """Interactive prediction page for user input"""
-    return render_template('predict.html', models=list(models.keys()))
+    # Filter out LSTM embedding variants - they'll be shown within LSTM
+    main_models = [m for m in models.keys() if not (m.startswith('lstm_'))]
+    return render_template('predict.html', models=main_models)
 
 
 @app.route('/api/predict', methods=['POST'])
@@ -300,6 +313,7 @@ def predict():
     try:
         results = {}
 
+        # Include all models (including LSTM variants) for prediction
         for model_name, model in models.items():
             # Preprocess text (BERT handles its own tokenization)
             if model_name == 'bert':
@@ -312,7 +326,8 @@ def predict():
                 prediction = model.predict(padded, verbose=0)[0]
 
             # Determine threshold
-            threshold = 0.3 if model_name == 'lstm' else 0.5
+            # All LSTM variants use 0.3 threshold
+            threshold = 0.3 if model_name.startswith('lstm') else 0.5
 
             # Get top emotions
             emotion_scores = {
@@ -346,7 +361,145 @@ def predict():
         return jsonify({'error': str(e)}), 500
 
 
-# Compare models functionality removed
+@app.route('/api/explain', methods=['POST'])
+def explain_prediction():
+    """Generate LIME-based explanation for a prediction"""
+    data = request.get_json()
+    text = data.get('text', '')
+    model_name = data.get('model', 'lstm')
+
+    if not text:
+        return jsonify({'error': 'No text provided'}), 400
+
+    if model_name not in explainers:
+        return jsonify({'error': f'Explainer not available for {model_name}'}), 400
+
+    try:
+        print(f"\n[Explain API] Generating LIME explanation for {model_name}...")
+
+        explainer = explainers[model_name]
+
+        # Generate LIME explanation (faster with fewer samples for API)
+        explanation = explainer.explain_with_lime(
+            text,
+            num_features=8,  # Top 8 words
+            num_samples=300  # Reduced for faster response
+        )
+
+        # Also get word importance scores
+        word_importance = explainer.analyze_word_importance(text, explanation)
+
+        # Get attention weights if available
+        attention_data = explainer.get_attention_weights(text)
+
+        result = {
+            'model': model_name,
+            'text': text,
+            'lime_explanation': explanation,
+            'word_importance': word_importance,
+            'attention_weights': attention_data
+        }
+
+        print(f"  ✓ Explanation generated successfully")
+
+        return jsonify(result)
+
+    except Exception as e:
+        import traceback
+        print(f"[Error] Failed to generate explanation:")
+        print(traceback.format_exc())
+        return jsonify({'error': f'Explanation failed: {str(e)}'}), 500
+
+
+@app.route('/api/compare-lstm-embeddings', methods=['POST'])
+def compare_lstm_embeddings():
+    """Compare LSTM models with different embedding types"""
+    try:
+        print(f"\n{'='*70}")
+        print(f"Comparing LSTM models with different embeddings...")
+        print(f"{'='*70}")
+
+        # Find all LSTM models
+        lstm_models = {k: v for k, v in models.items() if k.startswith('lstm')}
+
+        if not lstm_models:
+            return jsonify({'error': 'No LSTM models found'}), 404
+
+        # Load test data
+        _, _, df_test = load_dataset()
+        print(f"Loaded test data: {len(df_test)} samples")
+
+        # Preprocess
+        from model_utils import preprocess_for_prediction
+        X_test, Y_test = preprocess_for_prediction(df_test, tokenizer, for_bert=False)
+        print(f"Preprocessed X_test shape: {X_test.shape}")
+
+        results = {}
+
+        # Evaluate each LSTM variant
+        for model_name, model in lstm_models.items():
+            print(f"\n  Evaluating {model_name}...")
+
+            Y_pred_proba = model.predict(X_test, verbose=0)
+            print(f"    Predictions complete! Shape: {Y_pred_proba.shape}")
+
+            # Calculate metrics
+            from sklearn.metrics import (
+                hamming_loss, roc_auc_score, f1_score,
+                precision_score, recall_score
+            )
+
+            threshold = 0.3  # All LSTM models use 0.3
+            Y_pred_binary = (Y_pred_proba > threshold).astype(int)
+
+            metrics = {
+                'hamming_loss': float(hamming_loss(Y_test, Y_pred_binary)),
+                'auc_roc_macro': float(roc_auc_score(Y_test, Y_pred_proba, average='macro')),
+                'f1_micro': float(f1_score(Y_test, Y_pred_binary, average='micro')),
+                'f1_macro': float(f1_score(Y_test, Y_pred_binary, average='macro')),
+                'precision_micro': float(precision_score(Y_test, Y_pred_binary, average='micro', zero_division=0)),
+                'precision_macro': float(precision_score(Y_test, Y_pred_binary, average='macro', zero_division=0)),
+                'recall_micro': float(recall_score(Y_test, Y_pred_binary, average='micro', zero_division=0)),
+                'recall_macro': float(recall_score(Y_test, Y_pred_binary, average='macro', zero_division=0)),
+                'threshold': threshold
+            }
+
+            # Per-emotion metrics
+            per_emotion_metrics = {}
+            for i, emotion in enumerate(EMOTION_LABELS):
+                per_emotion_metrics[emotion] = {
+                    'precision': float(precision_score(Y_test[:, i], Y_pred_binary[:, i], zero_division=0)),
+                    'recall': float(recall_score(Y_test[:, i], Y_pred_binary[:, i], zero_division=0)),
+                    'f1': float(f1_score(Y_test[:, i], Y_pred_binary[:, i], zero_division=0))
+                }
+
+            # Extract embedding type from model name
+            embedding_type = model_name.replace('lstm_', '').replace('lstm', 'learned').upper()
+            if embedding_type == 'LEARNED':
+                embedding_type = 'Learned'
+            elif embedding_type == 'TFIDF':
+                embedding_type = 'TF-IDF'
+
+            results[model_name] = {
+                'model': model_name,
+                'embedding_type': embedding_type,
+                'metrics': metrics,
+                'per_emotion': per_emotion_metrics
+            }
+
+            print(f"    ✓ {model_name} - F1-Macro: {metrics['f1_macro']:.4f}, AUC-ROC: {metrics['auc_roc_macro']:.4f}")
+
+        print(f"\n{'='*70}")
+        print(f"LSTM embedding comparison complete!")
+        print(f"{'='*70}\n")
+
+        return jsonify(results)
+
+    except Exception as e:
+        import traceback
+        print(f"\nError comparing LSTM embeddings:")
+        print(traceback.format_exc())
+        return jsonify({'error': f"LSTM embedding comparison failed: {str(e)}"}), 500
 
 
 if __name__ == '__main__':
