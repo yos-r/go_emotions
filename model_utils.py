@@ -280,7 +280,7 @@ def load_all_models():
         except Exception as e:
             print(f"[ERROR] Error loading BiLSTM+Attention: {e}")
 
-    # Model 3: CNN-BiLSTM with Attention
+    # Model 3: CNN-BiLSTM with Attention (Main model)
     cnn_bilstm_path = os.path.join(models_dir, 'modele_cnn_bilstm_attention_final.keras')
     if os.path.exists(cnn_bilstm_path):
         try:
@@ -288,6 +288,31 @@ def load_all_models():
             print(f"[OK] Loaded CNN-BiLSTM+Attention model from {cnn_bilstm_path}")
         except Exception as e:
             print(f"[ERROR] Error loading CNN-BiLSTM+Attention: {e}")
+
+    # Model 3 Variants: Hybrid ablation study models
+    hybrid_dir = os.path.join(models_dir, 'hybrid')
+    if os.path.exists(hybrid_dir):
+        # Load ablation study config
+        config_path = os.path.join(hybrid_dir, 'ablation_study_config.json')
+        hybrid_config = {}
+        if os.path.exists(config_path):
+            import json
+            with open(config_path, 'r') as f:
+                hybrid_config = json.load(f)
+
+        # Load all hybrid variants
+        for variant_file in os.listdir(hybrid_dir):
+            if variant_file.endswith('.h5'):
+                variant_name = variant_file.replace('.h5', '')
+                variant_path = os.path.join(hybrid_dir, variant_file)
+                model_key = f'hybrid_{variant_name}'
+
+                try:
+                    models[model_key] = load_model(variant_path, custom_objects=custom_objects)
+                    description = hybrid_config.get(variant_name, variant_name)
+                    print(f"[OK] Loaded hybrid variant: {variant_name} - {description}")
+                except Exception as e:
+                    print(f"[ERROR] Error loading hybrid variant {variant_name}: {e}")
 
     # Model 4: BERT (PyTorch)
     bert_path = os.path.join(models_dir, 'best_bert_model_pytorch.pt')

@@ -133,13 +133,26 @@
                             {% endfor %}
                         </div>
 
+    <!-- LSTM Embedding Comparison -->
+    <div class="card mt-4" id="lstmEmbeddingCard" style="display: none;">
+        <div class="card-header">
+            <i class="fas fa-layer-group"></i> LSTM Embedding Type Comparison
+        </div>
+        <div class="card-body">
+            <p class="text-muted">Comparing predictions across different LSTM embedding strategies:</p>
+            <div id="lstmEmbeddingComparison"></div>
+        </div>
+    </div>
+
     <!-- Comparison -->
     <div class="card mt-4">
         <div class="card-header">
             <i class="fas fa-balance-scale"></i> Model Comparison
         </div>
         <div class="card-body">
-            <div id="comparisonTable"></div>
+            <div class="table-responsive">
+                <div id="comparisonTable"></div>
+            </div>
         </div>
     </div>
 
@@ -162,17 +175,6 @@
                     </ul>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- LSTM Embedding Comparison -->
-    <div class="card mt-4" id="lstmEmbeddingCard" style="display: none;">
-        <div class="card-header">
-            <i class="fas fa-layer-group"></i> LSTM Embedding Type Comparison
-        </div>
-        <div class="card-body">
-            <p class="text-muted">Comparing predictions across different LSTM embedding strategies:</p>
-            <div id="lstmEmbeddingComparison"></div>
         </div>
     </div>
 </div>
@@ -218,6 +220,40 @@
         height: 100%;
         background: linear-gradient(90deg, #e74c3c, #f39c12, #2ecc71);
         transition: width 0.3s;
+    }
+
+    /* Make comparison table scrollable */
+    .table-responsive {
+        max-height: 600px;
+        overflow-x: auto;
+        overflow-y: auto;
+    }
+
+    .table-responsive table {
+        min-width: 100%;
+    }
+
+    /* Sticky header for comparison table */
+    .table-responsive thead th {
+        position: sticky;
+        top: 0;
+        background-color: white;
+        z-index: 10;
+        box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Sticky first column */
+    .table-responsive td:first-child,
+    .table-responsive th:first-child {
+        position: sticky;
+        left: 0;
+        background-color: white;
+        z-index: 5;
+        box-shadow: 2px 0 2px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .table-responsive thead th:first-child {
+        z-index: 15;
     }
 </style>
 {% endblock %}
@@ -295,7 +331,12 @@
         };
 
         for (const [modelName, modelData] of Object.entries(data)) {
-            // Add embedding selector for LSTM model
+            // Skip variant models - they'll be accessed via selectors
+            if (modelName.startsWith('lstm_') || modelName.startsWith('hybrid_')) {
+                continue;
+            }
+
+            // Add variant selector for LSTM model
             if (modelName === 'lstm') {
                 const embeddingSelector = $(`
                     <div class="alert alert-info mb-3">
@@ -303,7 +344,7 @@
                         <p class="mb-2 small">Compare predictions with different embedding strategies:</p>
                         <div class="btn-group btn-group-sm" role="group" id="lstm-embedding-selector">
                             <button type="button" class="btn btn-outline-primary active" data-embedding="lstm">
-                                Learned
+                                Learned (Current)
                             </button>
                             <button type="button" class="btn btn-outline-primary lstm-predict-embedding-btn" data-embedding="lstm_fasttext">
                                 FastText
@@ -315,6 +356,50 @@
                     </div>
                 `);
                 $(`#${modelName}-content .card-body`).prepend(embeddingSelector);
+            }
+
+            // Add variant selector for CNN-BiLSTM model
+            if (modelName === 'cnn_bilstm_attention') {
+                const variantSelector = $(`
+                    <div class="alert alert-primary mb-3" id="ablation-study-selector">
+                        <h6><i class="fas fa-flask"></i> Explore Ablation Study Variants:</h6>
+                        <p class="mb-2 small">Test different architectural configurations:</p>
+
+                        <!-- Ablation Type Buttons -->
+                        <div class="mb-3">
+                            <label class="form-label small mb-2"><strong>Ablation Category:</strong></label>
+                            <div class="btn-group-vertical d-block" role="group" id="predict-ablation-type-buttons">
+                                <button type="button" class="btn btn-sm btn-outline-primary active mb-1" data-ablation="cnn_bilstm_attention">
+                                    <i class="fas fa-layer-group"></i> Full Model (Current)
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary mb-1" data-ablation="attention">
+                                    <i class="fas fa-brain"></i> Attention Variants
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary mb-1" data-ablation="components">
+                                    <i class="fas fa-cubes"></i> CNN/LSTM Components
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary mb-1" data-ablation="embeddings">
+                                    <i class="fas fa-font"></i> Embedding Types
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary mb-1" data-ablation="regularization">
+                                    <i class="fas fa-balance-scale"></i> Regularization
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Specific Variants (will be populated dynamically) -->
+                        <div id="predict-variant-buttons-container" style="display: none;">
+                            <label class="form-label small mb-2"><strong>Select Variant:</strong></label>
+                            <div id="predict-variant-buttons" class="d-grid gap-2">
+                                <!-- Variant buttons will be inserted here -->
+                            </div>
+                        </div>
+                    </div>
+                `);
+                $(`#${modelName}-content .card-body`).prepend(variantSelector);
+
+                // Load hybrid variants for the selector
+                loadHybridVariantsForPredict();
             }
             // Predicted emotions
             const predictedDiv = $(`#${modelName}-predicted`);
@@ -386,8 +471,8 @@
         // LSTM embedding comparison (only show if we have multiple LSTM models loaded)
         displayLSTMEmbeddingComparisonPrediction(data);
 
-        // Add event handlers for LSTM embedding switching
-        $('.lstm-predict-embedding-btn').off('click').on('click', function() {
+        // Add event handlers for LSTM embedding switching (including the "Learned" button)
+        $('#lstm-embedding-selector button').off('click').on('click', function() {
             const embeddingModel = $(this).data('embedding');
             switchLSTMEmbedding(embeddingModel);
         });
@@ -398,13 +483,31 @@
         $('#lstm-embedding-selector button').removeClass('active');
         $(`#lstm-embedding-selector button[data-embedding="${embeddingModel}"]`).addClass('active');
 
-        // Make API call to get predictions for this embedding
+        // Show loading indicator in the LSTM tab
+        const lstmContent = $('#lstm-content .card-body');
+        const originalContent = lstmContent.html();
+        lstmContent.html(`
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3 text-muted">Loading ${embeddingModel} predictions...</p>
+            </div>
+        `);
+
+        console.log(`[Frontend] Requesting prediction for ${embeddingModel}`);
+
+        // Make API call to get predictions for this specific embedding model only
         $.ajax({
             url: '/api/predict',
             method: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify({ text: currentText }),
+            data: JSON.stringify({ text: currentText, model: embeddingModel }),
             success: function(data) {
+                console.log(`[Frontend] Received prediction for ${embeddingModel}`);
+                // Restore original content structure
+                lstmContent.html(originalContent);
+
                 if (data[embeddingModel]) {
                     updateLSTMDisplay(embeddingModel, data[embeddingModel]);
                 } else {
@@ -412,6 +515,9 @@
                 }
             },
             error: function(xhr) {
+                console.error(`[Frontend] Error loading ${embeddingModel}:`, xhr);
+                // Restore original content
+                lstmContent.html(originalContent);
                 alert('Error: ' + (xhr.responseJSON?.error || 'Unknown error'));
             }
         });
@@ -513,7 +619,6 @@
         // Skip BERT for now (needs different handling)
         if (modelName === 'bert') {
             wordImportanceDiv.html('<p class="text-muted">LIME explanation not available for BERT model</p>');
-            visualizeWordImportance(modelName, modelData);  // Fallback to heuristic
             return;
         }
 
@@ -528,9 +633,7 @@
             },
             error: function(xhr) {
                 console.error(`LIME explanation failed for ${modelName}:`, xhr.responseText);
-                // Fallback to heuristic method
-                wordImportanceDiv.html('<p class="text-warning"><i class="fas fa-exclamation-triangle"></i> LIME unavailable, using heuristic method</p>');
-                visualizeWordImportance(modelName, modelData);
+                wordImportanceDiv.html('<p class="text-danger"><i class="fas fa-exclamation-triangle"></i> LIME explanation unavailable. Please try again.</p>');
             }
         });
     }
@@ -613,122 +716,6 @@
         `);
     }
 
-    function visualizeWordImportance(modelName, modelData) {
-        const text = $('#inputText').val();
-        const words = text.split(/\s+/);
-
-        // Calculate word importance based on predicted emotions
-        const wordImportanceDiv = $(`#${modelName}-word-importance`);
-        wordImportanceDiv.empty();
-
-        // Get top predicted emotion scores
-        const topEmotions = Object.entries(modelData.all_scores)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 3);
-
-        // Simple heuristic: words that appear in emotion-related contexts
-        const emotionKeywords = {
-            'happy': ['happy', 'joy', 'great', 'amazing', 'wonderful', 'excited', 'love'],
-            'sad': ['sad', 'disappointed', 'unhappy', 'depressed', 'miserable'],
-            'angry': ['angry', 'mad', 'furious', 'hate', 'disgusting', 'terrible'],
-            'fear': ['scared', 'afraid', 'nervous', 'anxious', 'worried'],
-            'surprise': ['wow', 'surprising', 'unexpected', 'shocked', 'amazing'],
-            'gratitude': ['thank', 'thanks', 'appreciate', 'grateful'],
-            'confusion': ['confused', 'unsure', 'puzzled', 'wondering']
-        };
-
-        // Assign importance scores to words
-        const wordScores = words.map(word => {
-            const lowerWord = word.toLowerCase().replace(/[^\w]/g, '');
-            let score = 0.3; // Base score
-
-            // Check if word matches any emotion keywords
-            for (const [emotion, keywords] of Object.entries(emotionKeywords)) {
-                if (keywords.some(kw => lowerWord.includes(kw))) {
-                    score = 0.9;
-                    break;
-                }
-            }
-
-            // Boost score for punctuation-heavy words (exclamation, question marks)
-            if (word.includes('!') || word.includes('?')) {
-                score = Math.min(score + 0.2, 1.0);
-            }
-
-            // Boost for capitalized words (emphasis)
-            if (word === word.toUpperCase() && word.length > 1) {
-                score = Math.min(score + 0.15, 1.0);
-            }
-
-            return score;
-        });
-
-        // Normalize scores
-        const maxScore = Math.max(...wordScores);
-        const normalizedScores = wordScores.map(s => s / maxScore);
-
-        // Create word heatmap
-        const wordElements = words.map((word, idx) => {
-            const score = normalizedScores[idx];
-            const intensity = Math.floor(score * 255);
-            const backgroundColor = `rgba(255, ${255 - intensity}, ${255 - intensity}, ${0.3 + score * 0.5})`;
-            const textColor = score > 0.7 ? '#fff' : '#333';
-
-            return `<span class="word-importance" style="background-color: ${backgroundColor}; color: ${textColor};"
-                         title="Importance: ${(score * 100).toFixed(0)}%">${word}</span>`;
-        }).join(' ');
-
-        wordImportanceDiv.html(wordElements);
-
-        // Extract key phrases (high-importance consecutive words)
-        const phrasesDiv = $(`#${modelName}-phrases-list`);
-        phrasesDiv.empty();
-
-        const keyPhrases = [];
-        let currentPhrase = [];
-
-        words.forEach((word, idx) => {
-            if (normalizedScores[idx] > 0.6) {
-                currentPhrase.push(word);
-            } else {
-                if (currentPhrase.length > 0) {
-                    keyPhrases.push(currentPhrase.join(' '));
-                    currentPhrase = [];
-                }
-            }
-        });
-
-        if (currentPhrase.length > 0) {
-            keyPhrases.push(currentPhrase.join(' '));
-        }
-
-        if (keyPhrases.length > 0) {
-            keyPhrases.forEach(phrase => {
-                phrasesDiv.append(`<span class="phrase-badge">${phrase}</span>`);
-            });
-        } else {
-            phrasesDiv.html('<p class="text-muted small">No strongly influential phrases detected</p>');
-        }
-
-        // Add top emotion indicators
-        const topEmotionDiv = $(`#${modelName}-key-phrases`);
-        topEmotionDiv.prepend(`
-            <div class="mb-3">
-                <strong>Top Detected Emotions:</strong>
-                <div class="mt-2">
-                    ${topEmotions.map(([emotion, score]) => `
-                        <div class="d-flex align-items-center mb-2">
-                            <span class="badge bg-primary" style="width: 120px;">${emotion}</span>
-                            <div class="confidence-indicator">
-                                <div class="confidence-bar" style="width: ${score * 100}%"></div>
-                            </div>
-                            <span class="ms-2 small">${(score * 100).toFixed(1)}%</span>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `);
-    }
 
     function createComparisonTable(data) {
         const comparisonDiv = $('#comparisonTable');
@@ -1042,6 +1029,206 @@
             insightDiv.html(insightHtml);
             comparisonDiv.append(insightDiv);
         }
+    }
+
+    // Hybrid variant handling for predictions
+    let hybridVariantsData = null;
+
+    function loadHybridVariantsForPredict() {
+        $.ajax({
+            url: '/api/get-hybrid-variants',
+            method: 'GET',
+            success: function(groups) {
+                hybridVariantsData = groups;
+                setupHybridVariantSelector(groups);
+            },
+            error: function(xhr) {
+                console.error('Error loading hybrid variants:', xhr);
+            }
+        });
+    }
+
+    function setupHybridVariantSelector(groups) {
+        // Handle ablation category button clicks
+        $('#predict-ablation-type-buttons button').off('click').on('click', function() {
+            const ablationType = $(this).data('ablation');
+
+            // Update active button
+            $('#predict-ablation-type-buttons button').removeClass('active');
+            $(this).addClass('active');
+
+            if (ablationType === 'cnn_bilstm_attention') {
+                // Back to baseline - hide variant buttons
+                $('#predict-variant-buttons-container').hide();
+
+                // Switch back to baseline variant in display (already loaded from initial prediction)
+                if (currentPredictions['cnn_bilstm_attention']) {
+                    updateCNNBiLSTMDisplay('cnn_bilstm_attention', currentPredictions['cnn_bilstm_attention']);
+                }
+            } else {
+                // Show variant buttons container
+                $('#predict-variant-buttons-container').show();
+
+                // Populate variant buttons
+                const variantButtonsDiv = $('#predict-variant-buttons');
+                variantButtonsDiv.empty();
+
+                const group = groups[ablationType];
+                if (group && group.variants) {
+                    group.variants.sort((a, b) => a.number - b.number).forEach(variant => {
+                        const button = $(`
+                            <button type="button" class="btn btn-sm btn-outline-success text-start variant-select-btn" data-variant="${variant.model_key}">
+                                <strong>#${variant.number.toString().padStart(2, '0')}</strong> - ${variant.description}
+                            </button>
+                        `);
+                        variantButtonsDiv.append(button);
+                    });
+
+                    // Attach click handlers to variant buttons
+                    $('.variant-select-btn').off('click').on('click', function() {
+                        const variantKey = $(this).data('variant');
+
+                        // Update active state
+                        $('.variant-select-btn').removeClass('active');
+                        $(this).addClass('active');
+
+                        // Load variant predictions
+                        switchCNNBiLSTMVariant(variantKey);
+                    });
+                }
+            }
+        });
+    }
+
+    function switchCNNBiLSTMVariant(variantKey) {
+        if (!currentText) return;
+
+        // Show loading indicator
+        const modelCard = $('#cnn_bilstm_attention-content .card-body');
+        const originalContent = modelCard.html();
+
+        // Store original content and show spinner
+        modelCard.data('original-content', originalContent);
+        modelCard.html(`
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3 text-muted">Loading variant predictions...</p>
+                <p class="small text-secondary">This may take a moment as we calculate predictions for the selected model variant.</p>
+            </div>
+        `);
+
+        console.log(`[Frontend] Requesting prediction for variant ${variantKey}`);
+
+        // Make API call to get predictions for this specific variant only
+        $.ajax({
+            url: '/api/predict',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ text: currentText, model: variantKey }),
+            success: function(data) {
+                console.log(`[Frontend] Received prediction for variant ${variantKey}`);
+                // Restore original content structure
+                const storedContent = modelCard.data('original-content');
+                modelCard.html(storedContent);
+
+                if (data[variantKey]) {
+                    updateCNNBiLSTMDisplay(variantKey, data[variantKey]);
+                } else {
+                    alert(`Variant ${variantKey} not available`);
+                }
+            },
+            error: function(xhr) {
+                console.error(`[Frontend] Error loading variant ${variantKey}:`, xhr);
+                // Restore original content on error
+                const storedContent = modelCard.data('original-content');
+                modelCard.html(storedContent);
+                alert('Error: ' + (xhr.responseJSON?.error || 'Unknown error'));
+            }
+        });
+    }
+
+    function updateCNNBiLSTMDisplay(modelName, modelData) {
+        const emotionColors = {
+            'admiration': '#1976d2', 'amusement': '#f57c00', 'anger': '#c62828',
+            'annoyance': '#c2185b', 'approval': '#388e3c', 'caring': '#7b1fa2',
+            'confusion': '#f9a825', 'curiosity': '#00796b', 'desire': '#ad1457',
+            'disappointment': '#5d4037', 'disapproval': '#d84315', 'disgust': '#303f9f',
+            'embarrassment': '#b71c1c', 'excitement': '#f57f17', 'fear': '#4e342e',
+            'gratitude': '#2e7d32', 'grief': '#455a64', 'joy': '#f9a825',
+            'love': '#c2185b', 'nervousness': '#512da8', 'optimism': '#0277bd',
+            'pride': '#558b2f', 'realization': '#e65100', 'relief': '#689f38',
+            'remorse': '#bf360c', 'sadness': '#37474f', 'surprise': '#f57f17',
+            'neutral': '#546e7a'
+        };
+
+        // Update predicted emotions
+        const predictedDiv = $('#cnn_bilstm_attention-predicted');
+        predictedDiv.empty();
+
+        if (modelData.predicted_emotions.length === 0) {
+            predictedDiv.append('<p class="text-muted">No emotions detected above threshold</p>');
+        } else {
+            modelData.predicted_emotions.forEach(emotion => {
+                const score = modelData.all_scores[emotion];
+                const color = emotionColors[emotion] || '#666';
+                predictedDiv.append(`
+                    <span class="emotion-tag" style="background-color: ${color}20; color: ${color}; border: 2px solid ${color};">
+                        ${emotion} (${(score * 100).toFixed(1)}%)
+                    </span>
+                `);
+            });
+        }
+
+        // Update threshold
+        $('#cnn_bilstm_attention-threshold').text(modelData.threshold);
+
+        // Update top 5 emotions
+        const topDiv = $('#cnn_bilstm_attention-top');
+        topDiv.empty();
+        const topList = $('<ul class="list-group"></ul>');
+
+        Object.entries(modelData.top_emotions).forEach(([emotion, score]) => {
+            const color = emotionColors[emotion] || '#666';
+            topList.append(`
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>${emotion}</span>
+                    <span class="badge rounded-pill" style="background-color: ${color};">
+                        ${(score * 100).toFixed(2)}%
+                    </span>
+                </li>
+            `);
+        });
+        topDiv.append(topList);
+
+        // Update chart
+        const emotions = Object.keys(modelData.all_scores);
+        const scores = Object.values(modelData.all_scores);
+        const colors = emotions.map(e => emotionColors[e] || '#666');
+
+        const trace = {
+            x: emotions,
+            y: scores,
+            type: 'bar',
+            marker: { color: colors }
+        };
+
+        const layout = {
+            title: 'All Emotion Probabilities',
+            xaxis: { tickangle: -45 },
+            yaxis: { title: 'Probability', range: [0, 1] },
+            height: 400
+        };
+
+        Plotly.newPlot('cnn_bilstm_attention-chart', [trace], layout);
+
+        // Update word importance
+        visualizeWordImportanceWithLIME(modelName, modelData);
+
+        // Update current predictions and refresh comparison
+        currentPredictions[modelName] = modelData;
+        createComparisonTable(currentPredictions);
     }
 </script>
 {% endblock %}

@@ -200,6 +200,11 @@
 
     function evaluateModel(modelName) {
         $('#loading').show();
+
+        // Check if this is a hybrid variant - if so, preserve the explorer
+        const isHybridVariant = modelName.startsWith('hybrid_');
+        const explorerHtml = isHybridVariant ? $('#hybrid-explorer-container').prop('outerHTML') : null;
+
         $('#resultsContainer').empty();
 
         $.ajax({
@@ -212,6 +217,13 @@
                 $('#loading').hide();
                 displayModelResults(data);
 
+                // If this was a hybrid variant and we saved the explorer, restore it
+                if (isHybridVariant && explorerHtml && hybridVariantGroups) {
+                    $('#resultsContainer').append(explorerHtml);
+                    // Reattach event handlers
+                    setupHybridFilters(hybridVariantGroups);
+                }
+
                 if (Object.keys(allResults).length > 1) {
                     displayComparison();
                 }
@@ -223,9 +235,14 @@
         });
     }
 
+    // Store hybrid variant groups globally
+    let hybridVariantGroups = null;
+
     function displayModelResults(data) {
         // Add embedding selector for LSTM
         const isLSTM = data.model === 'lstm';
+        const isCNNBiLSTM = data.model === 'cnn_bilstm_attention';
+
         const embeddingSelector = isLSTM ? `
             <div class="alert alert-info mt-3">
                 <h6><i class="fas fa-layer-group"></i> Try Other Embeddings:</h6>
@@ -246,6 +263,8 @@
                 </div>
             </div>
         ` : '';
+
+        // Hybrid explorer will be added separately after the main card for CNN-BiLSTM
 
         const resultCard = $(`
             <div class="row mb-4">
@@ -336,7 +355,405 @@
                 showLSTMEmbeddingComparison();
             });
         }
+
+        // Load hybrid variants if CNN-BiLSTM - append as separate card below
+        if (data.model === 'cnn_bilstm_attention') {
+            loadHybridVariants();
+        }
     }
+
+    function loadHybridVariants() {
+        // Create the hybrid explorer card with filter controls
+        const explorerCard = $(`
+            <div class="row mb-4" id="hybrid-explorer-container">
+                <div class="col-12">
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="fas fa-flask"></i> Ablation Study - Explore 20 Architectural Variants</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-3">
+                                Systematically compare variants testing different architectural choices.
+                                Use the filters below to explore specific configurations.
+                            </p>
+
+                            <!-- Filter Controls -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-4">
+                                    <label class="form-label"><i class="fas fa-brain"></i> Ablation Type:</label>
+                                    <select class="form-select form-select-sm" id="filter-ablation-type">
+                                        <option value="all">All Variants (20)</option>
+                                        <option value="attention">Attention Mechanism (4)</option>
+                                        <option value="components">CNN vs LSTM Components (3)</option>
+                                        <option value="embeddings">Embedding Types (5)</option>
+                                        <option value="regularization">Regularization (7)</option>
+                                        <option value="reference">Reference Baseline (1)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label"><i class="fas fa-cog"></i> Configuration:</label>
+                                    <select class="form-select form-select-sm" id="filter-configuration">
+                                        <option value="all">All Configurations</option>
+                                        <option value="with_attention">With Attention</option>
+                                        <option value="no_attention">Without Attention</option>
+                                        <option value="with_cnn">With CNN</option>
+                                        <option value="no_cnn">Without CNN</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label"><i class="fas fa-sliders-h"></i> Quick Actions:</label>
+                                    <div class="btn-group btn-group-sm w-100" role="group">
+                                        <button class="btn btn-outline-primary" id="view-all-variants">
+                                            <i class="fas fa-list"></i> View All
+                                        </button>
+                                        <button class="btn btn-outline-success" id="compare-mode">
+                                            <i class="fas fa-chart-bar"></i> Compare Mode
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Filtered Variants Display -->
+                            <div id="hybrid-variant-list" class="mt-3">
+                                <div class="text-center">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading variants...</span>
+                                    </div>
+                                    <p class="mt-2">Loading ablation study variants...</p>
+                                </div>
+                            </div>
+
+                            <!-- Comparison Mode Controls (hidden by default) -->
+                            <div id="comparison-mode-controls" style="display: none;" class="mt-3 p-3 bg-light rounded">
+                                <h6><i class="fas fa-check-square"></i> Select Variants to Compare:</h6>
+                                <div id="comparison-checkboxes" class="row g-2"></div>
+                                <div class="mt-3">
+                                    <button class="btn btn-sm btn-success" id="execute-comparison" disabled>
+                                        <i class="fas fa-chart-bar"></i> Compare Selected
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" id="cancel-comparison">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </button>
+                                    <span class="ms-2 text-muted" id="comparison-count">0 variants selected</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `);
+
+        // Append to results container
+        $('#resultsContainer').append(explorerCard);
+
+        // Load the variants data
+        $.ajax({
+            url: '/api/get-hybrid-variants',
+            method: 'GET',
+            success: function(groups) {
+                hybridVariantGroups = groups;
+                displayHybridVariantsList(groups);
+                setupHybridFilters(groups);
+            },
+            error: function(xhr) {
+                $('#hybrid-variant-list').html('<div class="alert alert-danger">Error loading variants: ' + (xhr.responseJSON?.error || 'Unknown error') + '</div>');
+            }
+        });
+    }
+
+    function displayHybridVariantsList(groups, filterGroup = 'all') {
+        const container = $('#hybrid-variant-list');
+        container.empty();
+
+        const groupOrder = ['attention', 'components', 'embeddings', 'regularization', 'reference'];
+        const allVariants = [];
+
+        // Collect all variants
+        groupOrder.forEach(groupKey => {
+            const group = groups[groupKey];
+            if (!group || group.variants.length === 0) return;
+
+            group.variants.forEach(variant => {
+                allVariants.push({ ...variant, groupKey, groupName: group.name });
+            });
+        });
+
+        // Filter variants based on selected group
+        const filteredVariants = filterGroup === 'all'
+            ? allVariants
+            : allVariants.filter(v => v.groupKey === filterGroup);
+
+        if (filteredVariants.length === 0) {
+            container.html('<p class="text-muted">No variants match the current filters.</p>');
+            return;
+        }
+
+        // Create table view
+        const table = $(`
+            <div class="table-responsive">
+                <table class="table table-hover table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 60px;">#</th>
+                            <th style="width: 150px;">Category</th>
+                            <th>Description</th>
+                            <th style="width: 120px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="variant-table-body"></tbody>
+                </table>
+            </div>
+        `);
+
+        container.append(table);
+        const tbody = $('#variant-table-body');
+
+        filteredVariants.sort((a, b) => a.number - b.number).forEach(variant => {
+            const categoryBadge = {
+                'attention': '<span class="badge bg-info">Attention</span>',
+                'components': '<span class="badge bg-warning text-dark">Components</span>',
+                'embeddings': '<span class="badge bg-success">Embeddings</span>',
+                'regularization': '<span class="badge bg-danger">Regularization</span>',
+                'reference': '<span class="badge bg-secondary">Reference</span>'
+            }[variant.groupKey];
+
+            const row = $(`
+                <tr class="variant-row" data-variant-key="${variant.model_key}">
+                    <td><span class="badge bg-primary">${variant.number.toString().padStart(2, '0')}</span></td>
+                    <td>${categoryBadge}</td>
+                    <td><small>${variant.description}</small></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary view-variant-btn" data-variant-key="${variant.model_key}">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                    </td>
+                </tr>
+            `);
+
+            tbody.append(row);
+        });
+
+        // Event handlers
+        $('.view-variant-btn').off('click').on('click', function(e) {
+            e.stopPropagation();
+            const variantKey = $(this).data('variant-key');
+            evaluateModel(variantKey);
+        });
+    }
+
+    function setupHybridFilters(groups) {
+        // Filter by ablation type
+        $('#filter-ablation-type').off('change').on('change', function() {
+            const filterValue = $(this).val();
+            displayHybridVariantsList(groups, filterValue);
+        });
+
+        // Filter by configuration
+        $('#filter-configuration').off('change').on('change', function() {
+            const configFilter = $(this).val();
+            applyConfigurationFilter(groups, configFilter);
+        });
+
+        // View all button
+        $('#view-all-variants').off('click').on('click', function() {
+            $('#filter-ablation-type').val('all');
+            $('#filter-configuration').val('all');
+            displayHybridVariantsList(groups, 'all');
+        });
+
+        // Compare mode toggle
+        $('#compare-mode').off('click').on('click', function() {
+            enterComparisonMode(groups);
+        });
+
+        // Cancel comparison
+        $('#cancel-comparison').off('click').on('click', function() {
+            exitComparisonMode(groups);
+        });
+
+        // Execute comparison
+        $('#execute-comparison').off('click').on('click', function() {
+            executeHybridComparison();
+        });
+    }
+
+    function applyConfigurationFilter(groups, configFilter) {
+        const container = $('#hybrid-variant-list');
+        container.empty();
+
+        const groupOrder = ['attention', 'components', 'embeddings', 'regularization', 'reference'];
+        const allVariants = [];
+
+        groupOrder.forEach(groupKey => {
+            const group = groups[groupKey];
+            if (!group || group.variants.length === 0) return;
+
+            group.variants.forEach(variant => {
+                allVariants.push({ ...variant, groupKey, groupName: group.name });
+            });
+        });
+
+        // Apply configuration filter
+        let filteredVariants = allVariants;
+        if (configFilter === 'with_attention') {
+            filteredVariants = allVariants.filter(v =>
+                v.description.toLowerCase().includes('attention') &&
+                !v.description.toLowerCase().includes('no attention')
+            );
+        } else if (configFilter === 'no_attention') {
+            filteredVariants = allVariants.filter(v =>
+                v.description.toLowerCase().includes('no attention') ||
+                (v.groupKey !== 'attention' && !v.description.toLowerCase().includes('attention'))
+            );
+        } else if (configFilter === 'with_cnn') {
+            filteredVariants = allVariants.filter(v =>
+                v.description.toLowerCase().includes('cnn') &&
+                !v.description.toLowerCase().includes('no cnn')
+            );
+        } else if (configFilter === 'no_cnn') {
+            filteredVariants = allVariants.filter(v =>
+                v.description.toLowerCase().includes('no cnn') ||
+                v.description.toLowerCase().includes('lstm only')
+            );
+        }
+
+        // Display filtered variants
+        if (filteredVariants.length === 0) {
+            container.html('<p class="text-muted">No variants match the current configuration filter.</p>');
+            return;
+        }
+
+        const table = $(`
+            <div class="table-responsive">
+                <table class="table table-hover table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 60px;">#</th>
+                            <th style="width: 150px;">Category</th>
+                            <th>Description</th>
+                            <th style="width: 120px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="variant-table-body"></tbody>
+                </table>
+            </div>
+        `);
+
+        container.append(table);
+        const tbody = $('#variant-table-body');
+
+        filteredVariants.sort((a, b) => a.number - b.number).forEach(variant => {
+            const categoryBadge = {
+                'attention': '<span class="badge bg-info">Attention</span>',
+                'components': '<span class="badge bg-warning text-dark">Components</span>',
+                'embeddings': '<span class="badge bg-success">Embeddings</span>',
+                'regularization': '<span class="badge bg-danger">Regularization</span>',
+                'reference': '<span class="badge bg-secondary">Reference</span>'
+            }[variant.groupKey];
+
+            const row = $(`
+                <tr class="variant-row" data-variant-key="${variant.model_key}">
+                    <td><span class="badge bg-primary">${variant.number.toString().padStart(2, '0')}</span></td>
+                    <td>${categoryBadge}</td>
+                    <td><small>${variant.description}</small></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary view-variant-btn" data-variant-key="${variant.model_key}">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                    </td>
+                </tr>
+            `);
+
+            tbody.append(row);
+        });
+
+        $('.view-variant-btn').off('click').on('click', function(e) {
+            e.stopPropagation();
+            const variantKey = $(this).data('variant-key');
+            evaluateModel(variantKey);
+        });
+    }
+
+    function enterComparisonMode(groups) {
+        // Hide normal view, show comparison mode
+        $('#hybrid-variant-list').hide();
+        $('#comparison-mode-controls').show();
+
+        const checkboxContainer = $('#comparison-checkboxes');
+        checkboxContainer.empty();
+
+        const groupOrder = ['attention', 'components', 'embeddings', 'regularization', 'reference'];
+        const allVariants = [];
+
+        groupOrder.forEach(groupKey => {
+            const group = groups[groupKey];
+            if (!group || group.variants.length === 0) return;
+
+            group.variants.forEach(variant => {
+                allVariants.push({ ...variant, groupKey, groupName: group.name });
+            });
+        });
+
+        allVariants.sort((a, b) => a.number - b.number).forEach(variant => {
+            const checkbox = $(`
+                <div class="col-md-6 col-lg-4">
+                    <div class="form-check">
+                        <input class="form-check-input comparison-variant-checkbox" type="checkbox" value="${variant.model_key}" id="cmp-${variant.id}">
+                        <label class="form-check-label" for="cmp-${variant.id}">
+                            <span class="badge bg-primary me-1">${variant.number.toString().padStart(2, '0')}</span>
+                            <small>${variant.description}</small>
+                        </label>
+                    </div>
+                </div>
+            `);
+            checkboxContainer.append(checkbox);
+        });
+
+        // Update count on checkbox change
+        $('.comparison-variant-checkbox').on('change', function() {
+            const count = $('.comparison-variant-checkbox:checked').length;
+            $('#comparison-count').text(`${count} variant${count !== 1 ? 's' : ''} selected`);
+            $('#execute-comparison').prop('disabled', count < 2);
+        });
+    }
+
+    function exitComparisonMode(groups) {
+        $('#comparison-mode-controls').hide();
+        $('#hybrid-variant-list').show();
+        $('.comparison-variant-checkbox').prop('checked', false);
+    }
+
+    function executeHybridComparison() {
+        const selected = $('.comparison-variant-checkbox:checked').map(function() {
+            return $(this).val();
+        }).get();
+
+        if (selected.length < 2) {
+            alert('Please select at least 2 variants to compare');
+            return;
+        }
+
+        $('#loading').show();
+        $('#resultsContainer').empty();
+        $('#comparisonSection').hide();
+        $('#lstmEmbeddingSection').hide();
+
+        $.ajax({
+            url: '/api/compare-hybrid-variants',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ variants: selected }),
+            success: function(data) {
+                $('#loading').hide();
+                displayHybridComparison(data);
+            },
+            error: function(xhr) {
+                alert('Error comparing variants: ' + (xhr.responseJSON?.error || 'Unknown error'));
+                $('#loading').hide();
+            }
+        });
+    }
+
 
     function createPerEmotionChart(data) {
         const emotions = Object.keys(data.per_emotion);
@@ -586,6 +1003,165 @@
         insights += '<li><strong>Embedding Comparison:</strong> Pre-trained embeddings (FastText, GloVe) leverage semantic knowledge learned from large corpora, while learned embeddings adapt specifically to emotion classification. TF-IDF provides a simpler frequency-based representation.</li>';
 
         insights += '</ul>';
+        return insights;
+    }
+
+    function displayHybridComparison(data) {
+        const comparisonCard = $(`
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="fas fa-microscope"></i> Hybrid Variant Comparison</h5>
+                        </div>
+                        <div class="card-body">
+                            <h6>Comparing ${Object.keys(data).length} variants</h6>
+
+                            <!-- Metrics Comparison Table -->
+                            <div class="table-responsive mt-3">
+                                <table class="table table-striped table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Variant</th>
+                                            <th>Description</th>
+                                            <th>Hamming Loss ↓</th>
+                                            <th>AUC-ROC ↑</th>
+                                            <th>F1-Micro ↑</th>
+                                            <th>F1-Macro ↑</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="hybrid-comparison-tbody"></tbody>
+                                </table>
+                            </div>
+
+                            <!-- Comparison Chart -->
+                            <div id="hybrid-comparison-chart" class="mt-4"></div>
+
+                            <!-- Insights -->
+                            <div id="hybrid-comparison-insights" class="mt-4"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `);
+
+        $('#resultsContainer').append(comparisonCard);
+
+        // Populate table
+        const tbody = $('#hybrid-comparison-tbody');
+        const variantMetrics = [];
+
+        // Find best/worst for highlighting
+        const metricNames = ['hamming_loss', 'auc_roc_macro', 'f1_micro', 'f1_macro'];
+        const bestWorst = {};
+        metricNames.forEach(metric => {
+            const values = Object.values(data).map(d => d.metrics[metric]);
+            if (metric === 'hamming_loss') {
+                bestWorst[metric] = { best: Math.min(...values), worst: Math.max(...values) };
+            } else {
+                bestWorst[metric] = { best: Math.max(...values), worst: Math.min(...values) };
+            }
+        });
+
+        for (const [modelKey, modelData] of Object.entries(data)) {
+            // Extract variant info
+            const variantId = modelKey.replace('hybrid_', '');
+            const variantNum = variantId.split('_')[0];
+            const description = hybridVariantGroups ? getVariantDescription(variantId) : variantId;
+
+            const metrics = modelData.metrics;
+            variantMetrics.push({ modelKey, variantId, variantNum, description, metrics });
+
+            const row = $('<tr></tr>');
+            row.append(`<td><span class="badge bg-primary">${variantNum}</span></td>`);
+            row.append(`<td><small>${description}</small></td>`);
+
+            // Add metrics with highlighting
+            ['hamming_loss', 'auc_roc_macro', 'f1_micro', 'f1_macro'].forEach(metric => {
+                const value = metrics[metric];
+                const isBest = value === bestWorst[metric].best;
+                const isWorst = value === bestWorst[metric].worst;
+
+                let cellClass = '';
+                let badge = '';
+                if (isBest) {
+                    cellClass = 'table-success';
+                    badge = ' <span class="badge bg-success">Best</span>';
+                } else if (isWorst) {
+                    cellClass = 'table-danger';
+                    badge = ' <span class="badge bg-danger">Worst</span>';
+                }
+
+                row.append(`<td class="${cellClass}">${value.toFixed(4)}${badge}</td>`);
+            });
+
+            tbody.append(row);
+        }
+
+        // Create comparison chart
+        const traces = [
+            {
+                x: variantMetrics.map(v => v.variantNum),
+                y: variantMetrics.map(v => v.metrics.auc_roc_macro),
+                name: 'AUC-ROC',
+                type: 'bar',
+                marker: { color: '#3498db' }
+            },
+            {
+                x: variantMetrics.map(v => v.variantNum),
+                y: variantMetrics.map(v => v.metrics.f1_macro),
+                name: 'F1-Macro',
+                type: 'bar',
+                marker: { color: '#2ecc71' }
+            }
+        ];
+
+        const layout = {
+            title: 'Performance Comparison Across Variants',
+            xaxis: { title: 'Variant Number', type: 'category' },
+            yaxis: { title: 'Score', range: [0, 1] },
+            barmode: 'group',
+            height: 400
+        };
+
+        Plotly.newPlot('hybrid-comparison-chart', traces, layout);
+
+        // Generate insights
+        const insights = generateHybridInsights(variantMetrics, bestWorst);
+        $('#hybrid-comparison-insights').html(insights);
+
+        // Recreate the explorer so users can continue exploring
+        if (hybridVariantGroups) {
+            // Simply call loadHybridVariants again to recreate the full explorer interface
+            loadHybridVariants();
+        }
+    }
+
+    function getVariantDescription(variantId) {
+        for (const groupKey in hybridVariantGroups) {
+            const group = hybridVariantGroups[groupKey];
+            const variant = group.variants.find(v => v.id === variantId);
+            if (variant) return variant.description;
+        }
+        return variantId;
+    }
+
+    function generateHybridInsights(variantMetrics, bestWorst) {
+        const best = variantMetrics.find(v => v.metrics.f1_macro === bestWorst.f1_macro.best);
+        const worst = variantMetrics.find(v => v.metrics.f1_macro === bestWorst.f1_macro.worst);
+
+        let insights = '<div class="alert alert-info">';
+        insights += '<h6><i class="fas fa-lightbulb"></i> Key Findings:</h6><ul>';
+
+        insights += `<li><strong>Best Performer:</strong> Variant #${best.variantNum} (${best.description}) with F1-Macro = ${best.metrics.f1_macro.toFixed(4)}</li>`;
+        insights += `<li><strong>Weakest Performer:</strong> Variant #${worst.variantNum} (${worst.description}) with F1-Macro = ${worst.metrics.f1_macro.toFixed(4)}</li>`;
+
+        const improvement = ((best.metrics.f1_macro - worst.metrics.f1_macro) / worst.metrics.f1_macro * 100).toFixed(1);
+        insights += `<li><strong>Performance Gap:</strong> ${improvement}% improvement from worst to best variant</li>`;
+
+        insights += '<li><strong>Ablation Study Value:</strong> These comparisons reveal which architectural choices (attention, CNN layers, embeddings, regularization) contribute most to emotion classification performance.</li>';
+
+        insights += '</ul></div>';
         return insights;
     }
 </script>

@@ -157,8 +157,8 @@ def data_visualization():
 @app.route('/model-performance')
 def model_performance():
     """Display model performance metrics and comparisons"""
-    # Filter out LSTM embedding variants - they'll be shown within LSTM
-    main_models = [m for m in models.keys() if not (m.startswith('lstm_'))]
+    # Filter out LSTM embedding variants and hybrid variants - they'll be shown within their parent models
+    main_models = [m for m in models.keys() if not (m.startswith('lstm_') or m.startswith('hybrid_'))]
     return render_template('model_performance.html', models=main_models)
 
 
@@ -296,8 +296,8 @@ def evaluate_model(model_name):
 @app.route('/predict')
 def predict_page():
     """Interactive prediction page for user input"""
-    # Filter out LSTM embedding variants - they'll be shown within LSTM
-    main_models = [m for m in models.keys() if not (m.startswith('lstm_'))]
+    # Filter out LSTM embedding variants and hybrid variants - they'll be shown within parent models
+    main_models = [m for m in models.keys() if not (m.startswith('lstm_') or m.startswith('hybrid_'))]
     return render_template('predict.html', models=main_models)
 
 
@@ -306,6 +306,7 @@ def predict():
     """Predict emotions for input text using all models"""
     data = request.get_json()
     text = data.get('text', '')
+    specific_model = data.get('model', None)  # Optional: request specific model only
 
     if not text:
         return jsonify({'error': 'No text provided'}), 400
@@ -313,8 +314,17 @@ def predict():
     try:
         results = {}
 
-        # Include all models (including LSTM variants) for prediction
-        for model_name, model in models.items():
+        # If specific model requested, only predict for that model
+        if specific_model:
+            print(f"\n[Predict API] Predicting for specific model: {specific_model}")
+            models_to_process = {specific_model: models.get(specific_model)}
+            if models_to_process[specific_model] is None:
+                return jsonify({'error': f'Model {specific_model} not found'}), 404
+        else:
+            # Include all models (including LSTM variants) for prediction
+            models_to_process = models
+
+        for model_name, model in models_to_process.items():
             # Preprocess text (BERT handles its own tokenization)
             if model_name == 'bert':
                 # BERT uses its own tokenizer
@@ -409,6 +419,167 @@ def explain_prediction():
         print(f"[Error] Failed to generate explanation:")
         print(traceback.format_exc())
         return jsonify({'error': f'Explanation failed: {str(e)}'}), 500
+
+
+@app.route('/api/get-hybrid-variants', methods=['GET'])
+def get_hybrid_variants():
+    """Get list of available hybrid model variants organized by group"""
+    try:
+        import json
+        import os
+
+        # Load ablation study config
+        config_path = 'models/hybrid/ablation_study_config.json'
+        if not os.path.exists(config_path):
+            return jsonify({'error': 'Ablation study config not found'}), 404
+
+        with open(config_path, 'r') as f:
+            variant_descriptions = json.load(f)
+
+        # Organize variants by group
+        groups = {
+            'attention': {
+                'name': 'Attention Mechanism',
+                'description': 'Ablate attention mechanism to measure its contribution',
+                'variants': []
+            },
+            'components': {
+                'name': 'CNN vs LSTM Components',
+                'description': 'Test individual component importance',
+                'variants': []
+            },
+            'embeddings': {
+                'name': 'Embedding Types',
+                'description': 'Test different pre-trained and random embeddings',
+                'variants': []
+            },
+            'regularization': {
+                'name': 'Regularization Techniques',
+                'description': 'Test different regularization strategies',
+                'variants': []
+            },
+            'reference': {
+                'name': 'Reference Baseline',
+                'description': 'Proven baseline for comparison',
+                'variants': []
+            }
+        }
+
+        # Categorize variants
+        for variant_id, description in variant_descriptions.items():
+            model_key = f'hybrid_{variant_id}'
+            if model_key not in models:
+                continue
+
+            variant_info = {
+                'id': variant_id,
+                'model_key': model_key,
+                'description': description,
+                'number': int(variant_id.split('_')[0])
+            }
+
+            # Categorize by number
+            num = variant_info['number']
+            if 1 <= num <= 4:
+                groups['attention']['variants'].append(variant_info)
+            elif 5 <= num <= 7:
+                groups['components']['variants'].append(variant_info)
+            elif 8 <= num <= 12:
+                groups['embeddings']['variants'].append(variant_info)
+            elif 13 <= num <= 19:
+                groups['regularization']['variants'].append(variant_info)
+            elif num == 20:
+                groups['reference']['variants'].append(variant_info)
+
+        return jsonify(groups)
+
+    except Exception as e:
+        import traceback
+        print(f"\nError getting hybrid variants:")
+        print(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/compare-hybrid-variants', methods=['POST'])
+def compare_hybrid_variants():
+    """Compare selected hybrid model variants"""
+    data = request.get_json()
+    variant_keys = data.get('variants', [])
+
+    if not variant_keys:
+        return jsonify({'error': 'No variants selected'}), 400
+
+    try:
+        print(f"\n{'='*70}")
+        print(f"Comparing {len(variant_keys)} hybrid variants...")
+        print(f"{'='*70}")
+
+        # Load test data
+        _, _, df_test = load_dataset()
+        print(f"Loaded test data: {len(df_test)} samples")
+
+        # Preprocess
+        from model_utils import preprocess_for_prediction
+        X_test, Y_test = preprocess_for_prediction(df_test, tokenizer, for_bert=False)
+
+        results = {}
+
+        for model_key in variant_keys:
+            if model_key not in models:
+                continue
+
+            print(f"\n  Evaluating {model_key}...")
+            model = models[model_key]
+
+            Y_pred_proba = model.predict(X_test, verbose=0)
+            print(f"    Predictions complete!")
+
+            # Calculate metrics
+            from sklearn.metrics import (
+                hamming_loss, roc_auc_score, f1_score,
+                precision_score, recall_score
+            )
+
+            threshold = 0.5
+            Y_pred_binary = (Y_pred_proba > threshold).astype(int)
+
+            metrics = {
+                'hamming_loss': float(hamming_loss(Y_test, Y_pred_binary)),
+                'auc_roc_macro': float(roc_auc_score(Y_test, Y_pred_proba, average='macro')),
+                'f1_micro': float(f1_score(Y_test, Y_pred_binary, average='micro')),
+                'f1_macro': float(f1_score(Y_test, Y_pred_binary, average='macro')),
+                'precision_micro': float(precision_score(Y_test, Y_pred_binary, average='micro', zero_division=0)),
+                'precision_macro': float(precision_score(Y_test, Y_pred_binary, average='macro', zero_division=0)),
+                'recall_micro': float(recall_score(Y_test, Y_pred_binary, average='micro', zero_division=0)),
+                'recall_macro': float(recall_score(Y_test, Y_pred_binary, average='macro', zero_division=0)),
+                'threshold': threshold
+            }
+
+            # Per-emotion metrics
+            per_emotion_metrics = {}
+            for i, emotion in enumerate(EMOTION_LABELS):
+                per_emotion_metrics[emotion] = {
+                    'precision': float(precision_score(Y_test[:, i], Y_pred_binary[:, i], zero_division=0)),
+                    'recall': float(recall_score(Y_test[:, i], Y_pred_binary[:, i], zero_division=0)),
+                    'f1': float(f1_score(Y_test[:, i], Y_pred_binary[:, i], zero_division=0))
+                }
+
+            results[model_key] = {
+                'model': model_key,
+                'metrics': metrics,
+                'per_emotion': per_emotion_metrics
+            }
+
+            print(f"    ✓ {model_key} - F1-Macro: {metrics['f1_macro']:.4f}")
+
+        print(f"\n{'='*70}\n")
+        return jsonify(results)
+
+    except Exception as e:
+        import traceback
+        print(f"\nError comparing hybrid variants:")
+        print(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/compare-lstm-embeddings', methods=['POST'])
