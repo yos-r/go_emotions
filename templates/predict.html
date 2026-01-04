@@ -471,8 +471,9 @@
         // LSTM embedding comparison (only show if we have multiple LSTM models loaded)
         displayLSTMEmbeddingComparisonPrediction(data);
 
-        // Add event handlers for LSTM embedding switching (including the "Learned" button)
-        $('#lstm-embedding-selector button').off('click').on('click', function() {
+        // Add event handlers for LSTM embedding switching using delegation
+        // Attach to body so it persists even when content is rebuilt
+        $('body').off('click', '#lstm-embedding-selector button').on('click', '#lstm-embedding-selector button', function() {
             const embeddingModel = $(this).data('embedding');
             switchLSTMEmbedding(embeddingModel);
         });
@@ -1049,8 +1050,8 @@
     }
 
     function setupHybridVariantSelector(groups) {
-        // Handle ablation category button clicks
-        $('#predict-ablation-type-buttons button').off('click').on('click', function() {
+        // Handle ablation category button clicks using delegation
+        $('body').off('click', '#predict-ablation-type-buttons button').on('click', '#predict-ablation-type-buttons button', function() {
             const ablationType = $(this).data('ablation');
 
             // Update active button
@@ -1084,8 +1085,8 @@
                         variantButtonsDiv.append(button);
                     });
 
-                    // Attach click handlers to variant buttons
-                    $('.variant-select-btn').off('click').on('click', function() {
+                    // Attach click handlers to variant buttons using delegation
+                    $('body').off('click', '.variant-select-btn').on('click', '.variant-select-btn', function() {
                         const variantKey = $(this).data('variant');
 
                         // Update active state
@@ -1103,21 +1104,28 @@
     function switchCNNBiLSTMVariant(variantKey) {
         if (!currentText) return;
 
-        // Show loading indicator
-        const modelCard = $('#cnn_bilstm_attention-content .card-body');
-        const originalContent = modelCard.html();
+        // Show loading indicator only on the results section (not the selector)
+        const predictedDiv = $('#cnn_bilstm_attention-predicted');
+        const topDiv = $('#cnn_bilstm_attention-top');
+        const chartDiv = $('#cnn_bilstm_attention-chart');
+        const wordImportanceDiv = $('#cnn_bilstm_attention-word-importance');
 
-        // Store original content and show spinner
-        modelCard.data('original-content', originalContent);
-        modelCard.html(`
-            <div class="text-center py-5">
-                <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+        // Store original content of each section
+        const originalPredicted = predictedDiv.html();
+        const originalTop = topDiv.html();
+
+        // Show loading spinner in predicted section
+        predictedDiv.html(`
+            <div class="text-center py-3">
+                <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
-                <p class="mt-3 text-muted">Loading variant predictions...</p>
-                <p class="small text-secondary">This may take a moment as we calculate predictions for the selected model variant.</p>
+                <p class="mt-2 text-muted small">Loading variant predictions...</p>
             </div>
         `);
+        topDiv.empty();
+        chartDiv.empty();
+        if (wordImportanceDiv.length) wordImportanceDiv.empty();
 
         console.log(`[Frontend] Requesting prediction for variant ${variantKey}`);
 
@@ -1129,21 +1137,21 @@
             data: JSON.stringify({ text: currentText, model: variantKey }),
             success: function(data) {
                 console.log(`[Frontend] Received prediction for variant ${variantKey}`);
-                // Restore original content structure
-                const storedContent = modelCard.data('original-content');
-                modelCard.html(storedContent);
 
                 if (data[variantKey]) {
                     updateCNNBiLSTMDisplay(variantKey, data[variantKey]);
                 } else {
+                    // Restore original content on failure
+                    predictedDiv.html(originalPredicted);
+                    topDiv.html(originalTop);
                     alert(`Variant ${variantKey} not available`);
                 }
             },
             error: function(xhr) {
                 console.error(`[Frontend] Error loading variant ${variantKey}:`, xhr);
                 // Restore original content on error
-                const storedContent = modelCard.data('original-content');
-                modelCard.html(storedContent);
+                predictedDiv.html(originalPredicted);
+                topDiv.html(originalTop);
                 alert('Error: ' + (xhr.responseJSON?.error || 'Unknown error'));
             }
         });
