@@ -21,7 +21,6 @@
     \usepackage{algorithm}%
     \usepackage{algorithmicx}%
     \usepackage{algpseudocode}%
-    \usepackage{float}%
 
     \theoremstyle{thmstyleone}%
     \newtheorem{theorem}{Theorem}%
@@ -299,7 +298,7 @@
 
     Table \ref{tab:dataset_stats} summarizes key dataset statistics.
 
-    \begin{table}[H]
+    \begin{table}[htbp]
     \caption{GoEmotions Dataset Statistics}\label{tab:dataset_stats}
     \centering
     \begin{tabular}{@{}lr@{}}
@@ -437,7 +436,7 @@
 
     Table \ref{tab:ablation} shows performance when removing individual architectural components.
 
-    \begin{table}[H]
+    \begin{table}[htbp]
     \caption{Component Ablation Results (Macro F1)}\label{tab:ablation}
     \begin{tabular}{@{}lcc@{}}
     \toprule
@@ -519,7 +518,7 @@
 
     BERT provides best accuracy but is 32x larger and 10x slower than LSTM (110M vs 1.2M parameters, 12.4ms vs 1.2ms per sample). CNN-BiLSTM offers good balance: 7.1\% better macro F1 than LSTM with only 2.3x slower inference. For real-time applications, CNN-BiLSTM may be preferred over BERT.
 
-    Statistical significance testing using McNemar's test confirms all architectural improvements are statistically significant (p < 0.01).
+    Statistical significance testing using McNemar's test confirms all architectural improvements are statistically significant (p \leq 0.01).
 
     \section{Conclusion}\label{sec:conclusion}
 
@@ -547,7 +546,7 @@
 
     \section*{Declarations}
 
-    \textbf{Funding:} Not applicable.
+    
 
     \textbf{Conflict of interest:} The authors declare no competing interests.
 
