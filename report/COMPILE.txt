@@ -1,0 +1,66 @@
+================================================================================
+QUICK COMPILATION GUIDE - GoEmotions LaTeX Report
+================================================================================
+
+GOOD NEWS: Bibliography is now embedded directly in the document!
+No BibTeX compilation needed - much simpler!
+
+================================================================================
+HOW TO COMPILE
+================================================================================
+
+Method 1: Step by Step
+----------------------
+cd report
+pdflatex main.tex
+pdflatex main.tex
+
+(Run pdflatex twice to resolve all cross-references)
+
+
+Method 2: One Command
+---------------------
+cd report && pdflatex main.tex && pdflatex main.tex
+
+
+Method 3: Using latexmk (if available)
+---------------------------------------
+cd report
+latexmk -pdf main.tex
+
+
+================================================================================
+OUTPUT
+================================================================================
+
+After compilation, you'll get:
+- main.pdf      <- Your final report (this is what you want!)
+- main.aux      <- Auxiliary file (needed for compilation)
+- main.log      <- Compilation log (check for errors/warnings)
+
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+Error: "sn-jnl.cls not found"
+Solution: Copy the class file
+  cp sn-article-template/sn-jnl.cls .
+
+Error: Undefined references
+Solution: Run pdflatex twice (2nd run resolves references)
+
+Clean build (remove temp files):
+  rm -f main.aux main.log main.out
+
+
+================================================================================
+NOTES
+================================================================================
+
+- Bibliography is now hardcoded in main.tex (lines 459-605)
+- No .bib file or BibTeX needed
+- Only 2 pdflatex runs required (not 4!)
+- Much simpler and more reliable
+
+================================================================================
