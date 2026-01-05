@@ -16,7 +16,7 @@ import plotly.express as px
 from plotly.utils import PlotlyJSONEncoder
 
 # Import custom model utilities
-from model_utils import (
+from utils.model_utils import (
     Attention,
     weighted_loss_factory,
     load_all_models,
@@ -26,8 +26,8 @@ from model_utils import (
     MAX_WORDS,
     MAX_LEN
 )
-from data_loader import load_dataset, get_dataset_statistics
-from explainability_utils import EmotionExplainer
+from utils.data_loader import load_dataset, get_dataset_statistics
+from utils.explainability_utils import EmotionExplainer
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'goemotion-secret-key-2024'
@@ -176,7 +176,7 @@ def evaluate_model(model_name):
         # Special handling for BERT: load pre-calculated metrics from bert.txt
         if model_name == 'bert':
             print("Loading pre-calculated BERT metrics from bert.txt...")
-            bert_results_path = 'bert.txt'
+            bert_results_path = 'architectures/bert.txt'
 
             if not os.path.exists(bert_results_path):
                 return jsonify({'error': 'BERT results file (bert.txt) not found'}), 500
@@ -229,7 +229,7 @@ def evaluate_model(model_name):
         print(f"Loaded test data: {len(df_test)} samples")
 
         # Preprocess
-        from model_utils import preprocess_for_prediction
+        from utils.model_utils import preprocess_for_prediction
         is_bert = model_name == 'bert'
         print(f"Preprocessing data (for_bert={is_bert})...")
         X_test, Y_test = preprocess_for_prediction(df_test, tokenizer, for_bert=is_bert)
@@ -519,7 +519,7 @@ def compare_hybrid_variants():
         print(f"Loaded test data: {len(df_test)} samples")
 
         # Preprocess
-        from model_utils import preprocess_for_prediction
+        from utils.model_utils import preprocess_for_prediction
         X_test, Y_test = preprocess_for_prediction(df_test, tokenizer, for_bert=False)
 
         results = {}
@@ -601,7 +601,7 @@ def compare_lstm_embeddings():
         print(f"Loaded test data: {len(df_test)} samples")
 
         # Preprocess
-        from model_utils import preprocess_for_prediction
+        from utils.model_utils import preprocess_for_prediction
         X_test, Y_test = preprocess_for_prediction(df_test, tokenizer, for_bert=False)
         print(f"Preprocessed X_test shape: {X_test.shape}")
 

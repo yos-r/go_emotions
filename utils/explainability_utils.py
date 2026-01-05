@@ -14,7 +14,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Import custom layers
-from model_utils import Attention, weighted_loss_factory, EMOTION_LABELS, MAX_LEN
+from .model_utils import Attention, weighted_loss_factory, EMOTION_LABELS, MAX_LEN
 
 # SHAP uses TensorFlow backend
 import tensorflow as tf
