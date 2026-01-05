@@ -3,3 +3,8 @@
 models/*
 _pycache_/
 /models
+report/main.log
+report/main.out
+report/main.aux
+report/COMPILE.txt
+report/main.synctex.gz

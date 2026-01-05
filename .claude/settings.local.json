@@ -20,7 +20,8 @@
       "Bash(taskkill:*)",
       "Bash(python app.py:*)",
       "Bash(python -m py_compile:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(pdflatex:*)"
     ],
     "deny": [],
     "ask": []

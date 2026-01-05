@@ -39,11 +39,11 @@
 
     \title[Multi-Label Emotion Classification Using Deep Learning]{Multi-Label Emotion Classification from Text Using Deep Learning: A Comparative Study of LSTM, BiLSTM-Attention, CNN-BiLSTM, and BERT Architectures}
 
-    \author*[1]{\fnm{First} \sur{Author}}\email{first.author@university.edu}
+    \author*[1]{\fnm{Yosr} \sur{Barghouti}}\email{yosr.barghouthi@etudiant-isi.utm.tn}
 
-    \author[1]{\fnm{Second} \sur{Author}}\email{second.author@university.edu}
 
-    \affil*[1]{\orgdiv{Department of Computer Science}, \orgname{University Name}, \orgaddress{\street{Street Address}, \city{City}, \postcode{Postal Code}, \country{Country}}}
+
+    \affil*[1]{\orgdiv{Higher Institute of Computer Science}, \orgname{University of Tunis El Manar, Tunis}}
 
     \abstract{Emotion detection from text is a fundamental task in natural language processing with applications ranging from mental health monitoring to customer sentiment analysis. Unlike traditional sentiment analysis, multi-label emotion classification allows text to express multiple emotional states simultaneously, reflecting the complexity of human emotions. This paper presents a comprehensive comparative study of four deep learning architectures for multi-label emotion classification on the GoEmotions dataset, which contains 58,000 Reddit comments annotated with 28 emotion categories. We implement and evaluate a simple LSTM baseline, a BiLSTM with attention mechanism, a hybrid CNN-BiLSTM with attention, and a fine-tuned BERT model. Our experimental results demonstrate that attention mechanisms significantly improve classification performance, particularly for underrepresented emotion classes. The BERT-based model achieves the highest performance with 65.8\% micro F1-score and 47.2\% macro F1-score, while the CNN-BiLSTM hybrid shows superior performance-efficiency trade-offs. Through extensive ablation studies, we analyze the contribution of different architectural components including attention layers, convolutional filters, and pre-trained embeddings, providing insights into optimal design choices for multi-label emotion classification systems.}
 
@@ -518,7 +518,7 @@
 
     BERT provides best accuracy but is 32x larger and 10x slower than LSTM (110M vs 1.2M parameters, 12.4ms vs 1.2ms per sample). CNN-BiLSTM offers good balance: 7.1\% better macro F1 than LSTM with only 2.3x slower inference. For real-time applications, CNN-BiLSTM may be preferred over BERT.
 
-    Statistical significance testing using McNemar's test confirms all architectural improvements are statistically significant (p \leq 0.01).
+    Statistical significance testing using McNemar's test confirms all architectural improvements are statistically significant (p < 0.01).
 
     \section{Conclusion}\label{sec:conclusion}
 
