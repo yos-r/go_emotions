@@ -1,10 +1,4 @@
-    %Version 3.1 December 2024
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%                                                                 %%
-    %% Please do not use \input{...} to include other tex files.       %%
-    %% Submit your LaTeX manuscript as one .tex document.              %%
-    %%                                                                 %%
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
     \documentclass[pdflatex,sn-mathphys-num]{sn-jnl}% Math and Physical Sciences Numbered Reference Style
 
@@ -37,7 +31,7 @@
 
     \begin{document}
 
-    \title[Multi-Label Emotion Classification Using Deep Learning]{Multi-Label Emotion Classification from Text Using Deep Learning: A Comparative Study of LSTM, BiLSTM-Attention, CNN-BiLSTM, and BERT Architectures}
+    \title[Multi-Label Emotion Classification Using Deep Learning]{ Multi-Label Emotion Classification from Text Using Deep Learning: A Comparative Study of LSTM, BiLSTM-Attention, CNN-BiLSTM, and BERT Architectures}
 
     \author*[1]{\fnm{Yosr} \sur{Barghouti}}\email{yosr.barghouthi@etudiant-isi.utm.tn}
 
@@ -70,15 +64,15 @@
 
         \item We conduct extensive ablation studies on the CNN-BiLSTM architecture to quantify the individual contributions of attention mechanisms, convolutional layers, embedding strategies, and regularization techniques.
 
-        \item We perform systematic embedding comparison experiments, evaluating random initialization against pre-trained embeddings (GloVe, Word2Vec, FastText) to assess the impact of transfer learning on emotion classification performance.
+        \item We perform systematic embedding comparison experiments, evaluating random initialization against pre-trained embeddings (GloVe, FastText) to assess the impact of transfer learning on emotion classification performance.
 
-        \item We establish comprehensive baseline comparisons against traditional machine learning approaches (logistic regression with TF-IDF) and published BERT results on GoEmotions to contextualize our findings.
+        \item We establish comprehensive baseline comparisons against LSTM approach and published BERT results on GoEmotions to contextualize our findings.
 
         \item We provide detailed model explainability analysis through attention weight visualization, enabling interpretation of which textual features drive emotion predictions across different architectures.
 
         \item We analyze model performance on individual emotion categories, identifying patterns of success and failure, and examining the impact of class imbalance on different architectures.
 
-        \item We develop an interactive web-based demonstration system using Flask that enables real-time emotion prediction, model comparison, and dataset exploration.
+        \item We develop an interactive web-based demonstration system using Flask that enables real-time emotion prediction, model comparison, and dataset visualization and exploration.
     \end{enumerate}
 
     The remainder of this paper is organized as follows: Section \ref{sec:related} reviews related work in emotion classification and deep learning for NLP. Section \ref{sec:approach} presents our proposed approaches, detailing the four architectures and their implementation. Section \ref{sec:experimental} describes the experimental setup including dataset characteristics, evaluation protocol, comparative methods, ablation studies, and comprehensive results with detailed analysis of success and failure cases. Section \ref{sec:conclusion} concludes with limitations and future research directions.
@@ -524,7 +518,7 @@
 
     \subsection{Summary}
 
-    This work presented a comprehensive study of deep learning architectures for multi-label emotion classification on the GoEmotions dataset. We implemented and evaluated four models: a simple LSTM baseline, a BiLSTM with attention, a hybrid CNN-BiLSTM with attention, and a fine-tuned BERT model. BERT achieves the best performance (65.8\% micro F1, 47.2\% macro F1), while the CNN-BiLSTM hybrid offers an efficient alternative with 2.3x faster inference. Attention mechanisms provide significant improvements (+7.3pp macro F1), particularly for rare emotions. Through extensive ablation studies, we quantified that BiLSTMs are the most critical component (-6.3pp when removed), followed by attention (-3.7pp) and CNN branches (-2.4pp).
+    This work presented a comprehensive study of deep learning architectures for multi-label emotion classification on the GoEmotions dataset. We implemented and evaluated four models: a simple LSTM baseline, a BiLSTM with attention, a hybrid CNN-BiLSTM with attention, and a fine-tuned BERT model. BERT achieves the best performance (55.19\% micro F1, 44.77\% macro F1), while the CNN-BiLSTM hybrid offers an efficient alternative with 2.3x faster inference. Attention mechanisms provide significant improvements (+7.3pp macro F1), particularly for rare emotions. Through extensive ablation studies, we quantified that BiLSTMs are the most critical component (-6.3pp when removed), followed by attention (-3.7pp) and CNN branches (-2.4pp).
 
     \subsection{Limitations}
 
@@ -1232,7 +1226,7 @@
     \section{Conclusion}\label{sec:conclusion}
 
     \subsection{Summary}
-
+%  TODO: review these numbers once more before finalizing
     This work presented a comprehensive study of deep learning architectures for multi-label emotion classification on the GoEmotions dataset. We implemented and evaluated four models: a simple LSTM baseline, a BiLSTM with attention, a hybrid CNN-BiLSTM with attention, and a fine-tuned BERT model. BERT achieves the best performance (65.8\% micro F1, 47.2\% macro F1), while the CNN-BiLSTM hybrid offers an efficient alternative with 2.3x faster inference. Attention mechanisms provide significant improvements (+7.3pp macro F1), particularly for rare emotions. Through extensive ablation studies, we quantified that BiLSTMs are the most critical component (-6.3pp when removed), followed by attention (-3.7pp) and CNN branches (-2.4pp).
 
     \subsection{Limitations}
@@ -1255,11 +1249,10 @@
 
     \section*{Declarations}
 
+   
     
 
-    \textbf{Conflict of interest:} The authors declare no competing interests.
-
-    \textbf{Data availability:} The GoEmotions dataset is publicly available. Code will be made available upon publication.
+    \textbf{Data availability:} The GoEmotions dataset is publicly available in a GitHub repository: \url{https://www.kaggle.com/datasets/debarshichanda/goemotions}
 
     \textbf{Code availability:} Implementation code and trained models will be made available in a public repository.
 
