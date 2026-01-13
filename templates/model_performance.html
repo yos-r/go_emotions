@@ -70,14 +70,38 @@
                         <thead class="table-dark">
                             <tr>
                                 <th>Embedding Type</th>
-                                <th>Hamming Loss ↓</th>
-                                <th>AUC-ROC ↑</th>
-                                <th>F1-Micro ↑</th>
-                                <th>F1-Macro ↑</th>
-                                <th>Precision-Micro ↑</th>
-                                <th>Recall-Micro ↑</th>
-                                <th>Precision-Macro ↑</th>
-                                <th>Recall-Macro ↑</th>
+                                <th data-bs-toggle="tooltip" data-bs-placement="top"
+                                    title="Fraction of incorrectly predicted labels. Lower is better. Measures overall label-level accuracy across all samples.">
+                                    Hamming Loss ↓ <i class="fas fa-info-circle" style="font-size: 0.8rem;"></i>
+                                </th>
+                                <th data-bs-toggle="tooltip" data-bs-placement="top"
+                                    title="Area Under ROC Curve (macro-averaged). Higher is better. Measures model's ability to distinguish between positive and negative classes for each emotion.">
+                                    AUC-ROC ↑ <i class="fas fa-info-circle" style="font-size: 0.8rem;"></i>
+                                </th>
+                                <th data-bs-toggle="tooltip" data-bs-placement="top"
+                                    title="Micro-averaged F1 score. Higher is better. Harmonic mean of precision and recall weighted by label frequency (favors common emotions).">
+                                    F1-Micro ↑ <i class="fas fa-info-circle" style="font-size: 0.8rem;"></i>
+                                </th>
+                                <th data-bs-toggle="tooltip" data-bs-placement="top"
+                                    title="Macro-averaged F1 score. Higher is better. Unweighted average F1 across all emotions (treats rare emotions equally with common ones).">
+                                    F1-Macro ↑ <i class="fas fa-info-circle" style="font-size: 0.8rem;"></i>
+                                </th>
+                                <th data-bs-toggle="tooltip" data-bs-placement="top"
+                                    title="Micro-averaged Precision. Higher is better. Of all predicted positive labels, what fraction were correct? Weighted by label frequency.">
+                                    Precision-Micro ↑ <i class="fas fa-info-circle" style="font-size: 0.8rem;"></i>
+                                </th>
+                                <th data-bs-toggle="tooltip" data-bs-placement="top"
+                                    title="Micro-averaged Recall. Higher is better. Of all actual positive labels, what fraction were predicted? Weighted by label frequency.">
+                                    Recall-Micro ↑ <i class="fas fa-info-circle" style="font-size: 0.8rem;"></i>
+                                </th>
+                                <th data-bs-toggle="tooltip" data-bs-placement="top"
+                                    title="Macro-averaged Precision. Higher is better. Of all predicted positive labels, what fraction were correct? Treats all emotions equally.">
+                                    Precision-Macro ↑ <i class="fas fa-info-circle" style="font-size: 0.8rem;"></i>
+                                </th>
+                                <th data-bs-toggle="tooltip" data-bs-placement="top"
+                                    title="Macro-averaged Recall. Higher is better. Of all actual positive labels, what fraction were predicted? Treats all emotions equally.">
+                                    Recall-Macro ↑ <i class="fas fa-info-circle" style="font-size: 0.8rem;"></i>
+                                </th>
                             </tr>
                         </thead>
                         <tbody id="lstmEmbeddingTableBody"></tbody>
@@ -108,17 +132,41 @@
         <h4 class="section-title">
             <i class="fas fa-table"></i> Metrics Comparison Table
         </h4>
+        <div class="alert alert-info" role="alert">
+            <i class="fas fa-info-circle"></i> <strong>About the Metrics:</strong>
+            Hover over column headers to see detailed metric definitions.
+            <strong>Micro-averaging</strong> weights by label frequency (favors common emotions),
+            while <strong>Macro-averaging</strong> treats all emotions equally (better for rare class performance).
+        </div>
         <div class="table-responsive">
             <table class="table table-striped" id="comparisonTable">
                 <thead>
                     <tr>
                         <th>Model</th>
-                        <th>Hamming Loss ↓</th>
-                        <th>AUC-ROC ↑</th>
-                        <th>F1-Micro ↑</th>
-                        <th>F1-Macro ↑</th>
-                        <th>Precision-Micro ↑</th>
-                        <th>Recall-Micro ↑</th>
+                        <th data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="Fraction of incorrectly predicted labels. Lower is better. Measures overall label-level accuracy across all samples.">
+                            Hamming Loss ↓ <i class="fas fa-info-circle text-muted" style="font-size: 0.8rem;"></i>
+                        </th>
+                        <th data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="Area Under ROC Curve (macro-averaged). Higher is better. Measures model's ability to distinguish between positive and negative classes for each emotion.">
+                            AUC-ROC ↑ <i class="fas fa-info-circle text-muted" style="font-size: 0.8rem;"></i>
+                        </th>
+                        <th data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="Micro-averaged F1 score. Higher is better. Harmonic mean of precision and recall weighted by label frequency (favors common emotions).">
+                            F1-Micro ↑ <i class="fas fa-info-circle text-muted" style="font-size: 0.8rem;"></i>
+                        </th>
+                        <th data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="Macro-averaged F1 score. Higher is better. Unweighted average F1 across all emotions (treats rare emotions equally with common ones).">
+                            F1-Macro ↑ <i class="fas fa-info-circle text-muted" style="font-size: 0.8rem;"></i>
+                        </th>
+                        <th data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="Micro-averaged Precision. Higher is better. Of all predicted positive labels, what fraction were correct? Weighted by label frequency.">
+                            Precision-Micro ↑ <i class="fas fa-info-circle text-muted" style="font-size: 0.8rem;"></i>
+                        </th>
+                        <th data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="Micro-averaged Recall. Higher is better. Of all actual positive labels, what fraction were predicted? Weighted by label frequency.">
+                            Recall-Micro ↑ <i class="fas fa-info-circle text-muted" style="font-size: 0.8rem;"></i>
+                        </th>
                     </tr>
                 </thead>
                 <tbody id="comparisonTableBody"></tbody>
@@ -130,6 +178,14 @@
 
 {% block extra_js %}
 <script>
+    // Initialize Bootstrap tooltips
+    $(document).ready(function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+
     let allResults = {};
 
     // Evaluate single model
@@ -368,6 +424,53 @@
         }
     }
 
+    function getVariantTooltip(variantId) {
+        // Comprehensive tooltips explaining each variant's purpose and architectural changes
+        const tooltips = {
+            '01_cnn_bilstm_attention': '<strong>Baseline Configuration</strong><br/>Full hybrid architecture combining:<br/>• CNN for local feature extraction<br/>• BiLSTM for sequential context<br/>• Attention for importance weighting<br/>This is the reference for ablation comparisons.',
+
+            '02_cnn_bilstm_no_attention': '<strong>Ablation: Remove Attention</strong><br/>Tests attention mechanism contribution by removing it while keeping CNN+BiLSTM.<br/><em>Expected impact:</em> Performance drop if attention helps focus on emotion-bearing words.',
+
+            '03_bilstm_attention_no_cnn': '<strong>Ablation: Remove CNN</strong><br/>Tests CNN contribution by removing convolutional layers.<br/><em>Expected impact:</em> May reduce ability to capture local n-gram patterns.',
+            
+            '04_bilstm_no_attention': '<strong>Ablation: Remove CNN + Attention</strong><br/>Minimal architecture with only BiLSTM for sequential processing.<br/><em>Expected impact:</em> Largest performance drop as multiple components removed.',
+
+            '05_cnn_only': '<strong>Component Test: CNN Only</strong><br/>Pure CNN architecture without LSTM/Attention.<br/><em>Purpose:</em> Test if convolutional layers alone can capture emotion patterns.',
+
+            '06_lstm_only': '<strong>Component Test: LSTM Only</strong><br/>Simple unidirectional LSTM without CNN/Attention.<br/><em>Purpose:</em> Baseline for sequential processing without bidirectionality.',
+
+            '07_cnn_multikernel': '<strong>Component Test: Enhanced CNN</strong><br/>CNN with larger kernel sizes for broader context windows.<br/><em>Purpose:</em> Test if CNN alone can replace LSTM with proper tuning.',
+
+            '08_hybrid_embedding_random': '<strong>Embedding: Random Initialization</strong><br/>Word embeddings trained from scratch (randomly initialized).<br/><em>Use case:</em> When no pre-trained embeddings available or domain-specific vocabulary.',
+
+            '09_hybrid_embedding_glove': '<strong>Embedding: GloVe (Frozen)</strong><br/>Pre-trained GloVe embeddings, weights frozen during training.<br/><em>Advantage:</em> Fast training, leverages general semantic knowledge.',
+
+            '10_hybrid_embedding_fasttext': '<strong>Embedding: FastText (Frozen)</strong><br/>Pre-trained FastText embeddings with subword information, frozen.<br/><em>Advantage:</em> Better handling of rare words and typos.',
+
+            '11_hybrid_embedding_glove_tuned': '<strong>Embedding: GloVe (Fine-tuned)</strong><br/>Pre-trained GloVe embeddings, fine-tuned during training.<br/><em>Advantage:</em> Adapts embeddings to emotion-specific context.',
+
+            '12_hybrid_embedding_fasttext_tuned': '<strong>Embedding: FastText (Fine-tuned)</strong><br/>Pre-trained FastText embeddings, fine-tuned during training.<br/><em>Expected:</em> Best of both - general knowledge + task adaptation.',
+
+            '13_regularization_dropout_only': '<strong>Regularization: Dropout Baseline</strong><br/>Standard dropout (0.3-0.5) without other regularization.<br/><em>Baseline:</em> Most common regularization approach.',
+
+            '14_regularization_batchnorm': '<strong>Regularization: + BatchNormalization</strong><br/>Adds batch normalization to stabilize training.<br/><em>Effect:</em> Can speed up convergence and reduce internal covariate shift.',
+
+            '15_regularization_l2_weak': '<strong>Regularization: + L2 (λ=0.0001)</strong><br/>Weak L2 weight penalty to prevent overfitting.<br/><em>Use case:</em> When mild regularization needed.',
+
+            '16_regularization_l2_medium': '<strong>Regularization: + L2 (λ=0.001)</strong><br/>Medium L2 weight penalty for moderate regularization.<br/><em>Most common:</em> Balanced regularization strength.',
+
+            '17_regularization_l2_strong': '<strong>Regularization: + L2 (λ=0.01)</strong><br/>Strong L2 penalty for aggressive regularization.<br/><em>Trade-off:</em> Reduces overfitting but may underfit.',
+
+            '18_regularization_dropout_high': '<strong>Regularization: High Dropout (0.5)</strong><br/>Aggressive dropout rate for strong regularization.<br/><em>Effect:</em> More robust but slower training.',
+
+            '19_regularization_combined': '<strong>Regularization: Kitchen Sink</strong><br/>Combines Dropout + BatchNorm + L2 (0.001).<br/><em>Purpose:</em> Test if multiple techniques stack benefits.',
+
+            '20_reference_proven_baseline': '<strong>Proven Reference</strong><br/>Simplified BiLSTM+Attention without CNN.<br/><em>Purpose:</em> Established architecture for fair comparison with hybrids.'
+        };
+
+        return tooltips[variantId] || '<em>Experimental variant - hover for architecture details</em>';
+    }
+
     function loadHybridVariants() {
         // Create the hybrid explorer card with filter controls
         const explorerCard = $(`
@@ -523,11 +626,22 @@
                 'reference': '<span class="badge bg-secondary">Reference</span>'
             }[variant.groupKey];
 
+            // Get detailed tooltip for this variant
+            const tooltip = getVariantTooltip(variant.id);
+
             const row = $(`
                 <tr class="variant-row" data-variant-key="${variant.model_key}">
                     <td><span class="badge bg-primary">${variant.number.toString().padStart(2, '0')}</span></td>
                     <td>${categoryBadge}</td>
-                    <td><small>${variant.description}</small></td>
+                    <td>
+                        <small>${variant.description}</small>
+                        <i class="fas fa-info-circle text-primary ms-2"
+                           style="cursor: pointer; font-size: 0.9rem;"
+                           data-bs-toggle="tooltip"
+                           data-bs-placement="right"
+                           data-bs-html="true"
+                           title="${tooltip}"></i>
+                    </td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary view-variant-btn" data-variant-key="${variant.model_key}">
                             <i class="fas fa-eye"></i> View
@@ -537,6 +651,12 @@
             `);
 
             tbody.append(row);
+        });
+
+        // Re-initialize tooltips for newly added elements
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
         });
 
         // Event handlers using delegation - attach to container that persists
@@ -657,11 +777,22 @@
                 'reference': '<span class="badge bg-secondary">Reference</span>'
             }[variant.groupKey];
 
+            // Get detailed tooltip for this variant
+            const tooltip = getVariantTooltip(variant.id);
+
             const row = $(`
                 <tr class="variant-row" data-variant-key="${variant.model_key}">
                     <td><span class="badge bg-primary">${variant.number.toString().padStart(2, '0')}</span></td>
                     <td>${categoryBadge}</td>
-                    <td><small>${variant.description}</small></td>
+                    <td>
+                        <small>${variant.description}</small>
+                        <i class="fas fa-info-circle text-primary ms-2"
+                           style="cursor: pointer; font-size: 0.9rem;"
+                           data-bs-toggle="tooltip"
+                           data-bs-placement="right"
+                           data-bs-html="true"
+                           title="${tooltip}"></i>
+                    </td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary view-variant-btn" data-variant-key="${variant.model_key}">
                             <i class="fas fa-eye"></i> View
@@ -671,6 +802,12 @@
             `);
 
             tbody.append(row);
+        });
+
+        // Re-initialize tooltips for newly added elements
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
         });
 
         $('.view-variant-btn').off('click').on('click', function(e) {

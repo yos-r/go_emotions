@@ -26,7 +26,12 @@
       "Bash(move model_utils.py utils )",
       "Bash(move data_loader.py utils )",
       "Bash(move explainability_utils.py utils)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(if [ -f models/hybrid/ablation_study_config.json ])",
+      "Bash(then cat models/hybrid/ablation_study_config.json)",
+      "Bash(python -m json.tool:*)",
+      "Bash(else echo \"File not found\")",
+      "Bash(fi)"
     ],
     "deny": [],
     "ask": []

@@ -39,7 +39,7 @@ A comprehensive web interface has been built for exploring datasets, evaluating 
 
 **Key Features**:
 - **Data Visualization**: Interactive Plotly charts showing emotion distributions, class imbalance, multi-label statistics
-- **Model Performance**: Evaluate models on test data with comprehensive metrics (Hamming Loss, AUC-ROC, F1, Precision, Recall)
+- **Model Performance**: Evaluate models on test data with comprehensive metrics (Hamming Loss, AUC-ROC, F1, Precision, Recall) with interactive tooltips explaining each metric
 - **Interactive Prediction**: Enter custom text and see predictions from all models simultaneously
 - **Model Comparison**: Side-by-side performance comparison with rankings
 
@@ -48,7 +48,7 @@ A comprehensive web interface has been built for exploring datasets, evaluating 
 - `utils/model_utils.py` - Model loading utilities with custom Attention layer
 - `utils/data_loader.py` - Dataset loading and statistics computation
 - `utils/explainability_utils.py` - LIME-based prediction explanations
-- `templates/` - HTML templates (base, index, data_visualization, model_performance, predict, compare)
+- `templates/` - HTML templates (base, index, data_visualization, model_performance, predict)
 - `static/` - CSS, JavaScript, and static assets
 
 **Running the App**:

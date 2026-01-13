@@ -114,10 +114,18 @@ def get_multi_label_statistics(df):
 
     avg_labels_per_sample = total_labels / len(df) if len(df) > 0 else 0
 
+    # Calculate additional statistics
+    max_labels = max(labels_per_sample.keys()) if labels_per_sample else 0
+    samples_with_no_label = labels_per_sample.get(0, 0)
+    samples_with_multiple_labels = sum(count for num_labels, count in labels_per_sample.items() if num_labels > 1)
+
     return {
         'labels_per_sample': dict(labels_per_sample),
         'avg_labels_per_sample': avg_labels_per_sample,
-        'total_labels': total_labels
+        'total_labels': total_labels,
+        'max_labels': max_labels,
+        'samples_with_no_label': samples_with_no_label,
+        'samples_with_multiple_labels': samples_with_multiple_labels
     }
 
 

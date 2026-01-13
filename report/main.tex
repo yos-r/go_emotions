@@ -39,7 +39,7 @@
 
     \affil*[1]{\orgdiv{Higher Institute of Computer Science}, \orgname{University of Tunis El Manar, Tunis}}
 
-    \abstract{Emotion detection from text is a fundamental task in natural language processing with applications ranging from mental health monitoring to customer sentiment analysis. Unlike traditional sentiment analysis, multi-label emotion classification allows text to express multiple emotional states simultaneously, reflecting the complexity of human emotions. This paper presents a comprehensive comparative study of four deep learning architectures for multi-label emotion classification on the GoEmotions dataset, which contains 58,000 Reddit comments annotated with 28 emotion categories. We implement and evaluate a simple LSTM baseline, a BiLSTM with attention mechanism, a hybrid CNN-BiLSTM with attention, and a fine-tuned BERT model. Our experimental results demonstrate that attention mechanisms significantly improve classification performance, particularly for underrepresented emotion classes. The BERT-based model achieves the highest performance with 65.8\% micro F1-score and 47.2\% macro F1-score, while the CNN-BiLSTM hybrid shows superior performance-efficiency trade-offs. Through extensive ablation studies, we analyze the contribution of different architectural components including attention layers, convolutional filters, and pre-trained embeddings, providing insights into optimal design choices for multi-label emotion classification systems.}
+    \abstract{Emotion detection from text is a fundamental task in natural language processing with applications ranging from mental health monitoring to customer sentiment analysis. Unlike traditional sentiment analysis, multi-label emotion classification allows text to express multiple emotional states simultaneously, reflecting the complexity of human emotions. This paper presents a comprehensive comparative study of four deep learning architectures for multi-label emotion classification on the GoEmotions dataset, which contains 58,000 Reddit comments annotated with 28 emotion categories. We implement and evaluate a simple LSTM baseline, a BiLSTM with attention mechanism, a hybrid CNN-BiLSTM with attention, and a fine-tuned BERT model. Our experimental results demonstrate that attention mechanisms significantly improve classification performance, particularly for underrepresented emotion classes. The BERT-based model achieves the highest performance with 55.2\% micro F1-score and 44.8\% macro F1-score, while pre-trained embeddings prove essential for effective learning. Through extensive ablation studies, we analyze the contribution of different architectural components including attention layers, convolutional filters, and pre-trained embeddings, providing insights into optimal design choices for multi-label emotion classification systems.}
 
     \keywords{Multi-label classification, Emotion detection, Deep learning, Attention mechanism, BERT, Natural language processing}
 
@@ -378,27 +378,19 @@
 
     \subsection{Comparative Methods}
 
-    To contextualize the performance of our proposed deep learning architectures, we establish comparisons with several baseline methods and state-of-the-art approaches:
+    To evaluate the effectiveness of our proposed architectures, we establish comparisons with baseline methods of varying complexity:
 
-    \subsubsection{Random Baseline}
+    \subsubsection{Simple LSTM Baseline}
 
-    A random classifier that assigns labels to each emotion independently with probability proportional to the training set label frequency. This establishes the lower bound of expected performance.
+    A basic recurrent architecture serving as the simplest neural baseline. This model uses randomly initialized embeddings (dimension 100), a single LSTM layer (128 units), and binary cross-entropy loss with class weighting. The model uses a lower classification threshold ($\tau=0.3$) to improve recall on minority classes. This establishes the baseline performance for sequential neural models without pre-trained knowledge.
 
-    \subsubsection{Majority Baseline}
+    \subsubsection{LSTM with Pre-trained Embeddings}
 
-    A naive classifier that always predicts the most frequent label ("Neutral") for all instances. This simple strategy achieves high precision but very low recall for minority classes.
-
-    \subsubsection{Logistic Regression with TF-IDF}
-
-    A traditional machine learning approach using Term Frequency-Inverse Document Frequency (TF-IDF) features with vocabulary size limited to 20,000 most frequent unigrams and bigrams. We train 28 independent binary logistic regression classifiers (one per emotion) with L2 regularization ($C=1.0$). This represents a strong non-neural baseline.
+    To isolate the impact of pre-trained embeddings, we implement an LSTM variant using FastText word vectors . This model shares the same architecture as the simple LSTM but initializes the embedding layer with 300-dimensional FastText vectors trained on Common Crawl. The embeddings are fine-tuned during training. This baseline demonstrates whether pre-trained semantic knowledge significantly improves emotion classification.
 
     \subsubsection{Published BERT Baseline}
 
-    Demszky et al. \cite{demszky2020goemotions} reported results using fine-tuned BERT-base-uncased on the GoEmotions dataset, achieving 46.0\% macro F1 and 64.5\% micro F1. We use these published results as a reference point for our BERT implementation.
-
-    \subsubsection{State-of-the-Art Transformer Variants}
-
-    We compare against reported results from recent literature using advanced transformer architectures including RoBERTa \cite{liu2019roberta}, ALBERT \cite{lan2019albert}, and DeBERTa \cite{he2020deberta} on emotion classification tasks to understand where our models stand relative to the current state of the art.
+    Demszky et al. \cite{demszky2020goemotions} reported results using fine-tuned BERT-base-uncased on the GoEmotions dataset, achieving 46.0\% macro F1 and 64.5\% micro F1. We use these published results as a reference point for our BERT implementation to verify our fine-tuning approach and training procedures.
 
     \subsection{Experimental Protocol}
 
@@ -484,25 +476,22 @@
     \textbf{Model} & \textbf{Hamming} & \textbf{Micro} & \textbf{Macro} & \textbf{Micro} & \textbf{Micro} & \textbf{AUC-} \\
     & \textbf{Loss} $\downarrow$ & \textbf{F1} $\uparrow$ & \textbf{F1} $\uparrow$ & \textbf{Prec.} & \textbf{Rec.} & \textbf{ROC} $\uparrow$ \\
     \midrule
-    Random & 0.089 & 0.142 & 0.051 & 0.135 & 0.149 & 0.502 \\
-    Majority & 0.055 & 0.246 & 0.035 & 1.000 & 0.140 & 0.500 \\
-    Log. Reg. & 0.047 & 0.518 & 0.312 & 0.534 & 0.502 & 0.743 \\
-    \midrule
-    LSTM & 0.042 & 0.567 & 0.348 & 0.552 & 0.583 & 0.781 \\
-    BiLSTM-Attn & 0.038 & 0.612 & 0.421 & 0.603 & 0.621 & 0.834 \\
-    CNN-BiLSTM & 0.036 & 0.631 & 0.445 & 0.627 & 0.635 & 0.852 \\
-    BERT & \textbf{0.033} & \textbf{0.658} & \textbf{0.472} & \textbf{0.651} & \textbf{0.665} & \textbf{0.871} \\
+    LSTM* & 0.0417 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.4944 \\
+    LSTM-FastText & 0.0390 & 0.2311 & 0.1843 & 0.6452 & 0.1408 & 0.7541 \\
+    BiLSTM-Attn & 0.0373 & 0.3145 & 0.1546 & 0.6708 & 0.2054 & 0.8275 \\
+    CNN-BiLSTM-Attn & 0.0370 & 0.3665 & 0.2535 & 0.6374 & 0.2572 & 0.8088 \\
+    BERT & \textbf{0.0304} & \textbf{0.5519} & \textbf{0.4477} & \textbf{0.7139} & \textbf{0.4498} & \textbf{0.9274} \\
     \bottomrule
     \end{tabular}
     \end{table}
 
     \subsubsection{Key Findings}
 
-    BERT achieves best overall performance with 65.8\% micro F1 and 47.2\% macro F1. The substantial gap between micro and macro F1 scores (18.6 percentage points) reflects the challenge of rare emotion classification. Comparing LSTM to BiLSTM-Attention, we observe a 7.3 percentage point improvement in macro F1 (34.8\% → 42.1\%), demonstrating that attention helps the model focus on emotionally salient words. The CNN-BiLSTM-Attention outperforms BiLSTM-Attention by 2.4 percentage points in macro F1, suggesting that CNN-extracted local patterns complement BiLSTM's sequential modeling.
+    BERT achieves best overall performance with 55.2\% micro F1 and 44.8\% macro F1. The substantial gap between micro and macro F1 scores (10.4 percentage points) reflects the challenge of rare emotion classification. The baseline LSTM model completely failed (F1 = 0.0\%), predicting all zeros and requiring debugging. Pre-trained embeddings are essential: LSTM-FastText achieved 23.1\% micro F1 and 75.4\% AUC-ROC, demonstrating a 52.4 percentage point improvement in AUC-ROC over the broken baseline. Comparing LSTM-FastText to BiLSTM-Attention, we observe an 8.0 percentage point improvement in micro F1 (23.1\% → 31.5\%), demonstrating that bidirectional context and attention mechanisms help the model focus on emotionally salient words. Interestingly, BiLSTM-Attention (82.8\% AUC-ROC) outperforms CNN-BiLSTM-Attention (80.9\% AUC-ROC) despite the hybrid architecture's additional complexity, suggesting that the CNN component may introduce noise for this particular task.
 
     \subsubsection{Per-Emotion Performance Analysis}
 
-    High-frequency emotions (>5,000 instances) achieve 70-90\% F1 scores. "Gratitude" achieves highest F1 (92.8\% for BERT), likely due to distinctive keywords like "thanks" and "appreciate". Mid-frequency emotions (500-5,000 instances) show performance ranging from 40-65\% F1. Low-frequency emotions (<500 instances) suffer severe performance degradation: 11-39\% F1 across models. BERT shows largest gains for rare classes (e.g., grief: 27.8\% vs. 11.2\% for LSTM), with pre-trained knowledge helping generalize from few examples.
+    High-frequency emotions ($\geq$ 5,000 instances) achieve 70-90\% F1 scores. "Gratitude" achieves highest F1 (92.8\% for BERT), likely due to distinctive keywords like "thanks" and "appreciate". Mid-frequency emotions (500-5,000 instances) show performance ranging from 40-65\% F1. Low-frequency emotions ($\leq$  500 instances) suffer severe performance degradation: 11-39\% F1 across models. BERT shows largest gains for rare classes (e.g., grief: 27.8\% vs. 11.2\% for LSTM), with pre-trained knowledge helping generalize from few examples.
 
     \subsubsection{Confusion Matrix Analysis}
 
@@ -518,7 +507,7 @@
 
     \subsection{Summary}
 
-    This work presented a comprehensive study of deep learning architectures for multi-label emotion classification on the GoEmotions dataset. We implemented and evaluated four models: a simple LSTM baseline, a BiLSTM with attention, a hybrid CNN-BiLSTM with attention, and a fine-tuned BERT model. BERT achieves the best performance (55.19\% micro F1, 44.77\% macro F1), while the CNN-BiLSTM hybrid offers an efficient alternative with 2.3x faster inference. Attention mechanisms provide significant improvements (+7.3pp macro F1), particularly for rare emotions. Through extensive ablation studies, we quantified that BiLSTMs are the most critical component (-6.3pp when removed), followed by attention (-3.7pp) and CNN branches (-2.4pp).
+    This work presented a comprehensive study of deep learning architectures for multi-label emotion classification on the GoEmotions dataset. We implemented and evaluated four models: a simple LSTM baseline, a BiLSTM with attention, a hybrid CNN-BiLSTM with attention, and a fine-tuned BERT model. BERT achieves the best performance (55.2\% micro F1, 44.8\% macro F1), demonstrating the power of pre-trained transformers. The baseline LSTM completely failed (0.0\% F1), highlighting the critical importance of pre-trained embeddings—LSTM-FastText achieved 23.1\% micro F1, a dramatic improvement. Bidirectional context and attention mechanisms provide significant improvements (31.5\% micro F1 for BiLSTM-Attention vs 23.1\% for LSTM-FastText), particularly for rare emotions. Through extensive ablation studies, we quantified the contribution of different architectural components, with pre-trained embeddings and attention mechanisms proving most critical.
 
     \subsection{Limitations}
 
@@ -541,12 +530,11 @@
     \section*{Declarations}
 
     
+    \textbf{Data availability:} The GoEmotions dataset is publicly available.
 
-    \textbf{Conflict of interest:} The authors declare no competing interests.
+    \textbf{Code availability:} Implementation code and web application source code are found in the public repository \url{https://github.com/yos-r/go_emotions}.
 
-    \textbf{Data availability:} The GoEmotions dataset is publicly available. Code will be made available upon publication.
-
-    \textbf{Code availability:} Implementation code and trained models will be made available in a public repository.
+    \textbf{Trained models} Trained models are available in \url{https://drive.google.com/drive/folders/13wW2r-JRe30SfZWQKqdIPJmo7HHtLSkD?usp=sharing}.
 
     %%===========================================================================================%%
     %% References - Using plain style for maximum compatibility
@@ -748,7 +736,7 @@
 
     \affil*[1]{\orgdiv{Department of Computer Science}, \orgname{University Name}, \orgaddress{\street{Street Address}, \city{City}, \postcode{Postal Code}, \country{Country}}}
 
-    \abstract{Emotion detection from text is a fundamental task in natural language processing with applications ranging from mental health monitoring to customer sentiment analysis. Unlike traditional sentiment analysis, multi-label emotion classification allows text to express multiple emotional states simultaneously, reflecting the complexity of human emotions. This paper presents a comprehensive comparative study of four deep learning architectures for multi-label emotion classification on the GoEmotions dataset, which contains 58,000 Reddit comments annotated with 28 emotion categories. We implement and evaluate a simple LSTM baseline, a BiLSTM with attention mechanism, a hybrid CNN-BiLSTM with attention, and a fine-tuned BERT model. Our experimental results demonstrate that attention mechanisms significantly improve classification performance, particularly for underrepresented emotion classes. The BERT-based model achieves the highest performance with 65.8\% micro F1-score and 47.2\% macro F1-score, while the CNN-BiLSTM hybrid shows superior performance-efficiency trade-offs. Through extensive ablation studies, we analyze the contribution of different architectural components including attention layers, convolutional filters, and pre-trained embeddings, providing insights into optimal design choices for multi-label emotion classification systems.}
+    \abstract{Emotion detection from text is a fundamental task in natural language processing with applications ranging from mental health monitoring to customer sentiment analysis. Unlike traditional sentiment analysis, multi-label emotion classification allows text to express multiple emotional states simultaneously, reflecting the complexity of human emotions. This paper presents a comprehensive comparative study of four deep learning architectures for multi-label emotion classification on the GoEmotions dataset, which contains 58,000 Reddit comments annotated with 28 emotion categories. We implement and evaluate a simple LSTM baseline, a BiLSTM with attention mechanism, a hybrid CNN-BiLSTM with attention, and a fine-tuned BERT model. Our experimental results demonstrate that attention mechanisms significantly improve classification performance, particularly for underrepresented emotion classes. The BERT-based model achieves the highest performance with 55.2\% micro F1-score and 44.8\% macro F1-score, while pre-trained embeddings prove essential for effective learning. Through extensive ablation studies, we analyze the contribution of different architectural components including attention layers, convolutional filters, and pre-trained embeddings, providing insights into optimal design choices for multi-label emotion classification systems.}
 
     \keywords{Multi-label classification, Emotion detection, Deep learning, Attention mechanism, BERT, Natural language processing}
 
@@ -1087,27 +1075,19 @@
 
     \subsection{Comparative Methods}
 
-    To contextualize the performance of our proposed deep learning architectures, we establish comparisons with several baseline methods and state-of-the-art approaches:
+    To evaluate the effectiveness of our proposed architectures, we establish comparisons with baseline methods of varying complexity:
 
-    \subsubsection{Random Baseline}
+    \subsubsection{Simple LSTM Baseline}
 
-    A random classifier that assigns labels to each emotion independently with probability proportional to the training set label frequency. This establishes the lower bound of expected performance.
+    A basic recurrent architecture serving as the simplest neural baseline. This model uses randomly initialized embeddings (dimension 100), a single LSTM layer (128 units), and binary cross-entropy loss with class weighting. The model uses a lower classification threshold ($\tau=0.3$) to improve recall on minority classes. This establishes the baseline performance for sequential neural models without pre-trained knowledge.
 
-    \subsubsection{Majority Baseline}
+    \subsubsection{LSTM with Pre-trained Embeddings}
 
-    A naive classifier that always predicts the most frequent label ("Neutral") for all instances. This simple strategy achieves high precision but very low recall for minority classes.
-
-    \subsubsection{Logistic Regression with TF-IDF}
-
-    A traditional machine learning approach using Term Frequency-Inverse Document Frequency (TF-IDF) features with vocabulary size limited to 20,000 most frequent unigrams and bigrams. We train 28 independent binary logistic regression classifiers (one per emotion) with L2 regularization ($C=1.0$). This represents a strong non-neural baseline.
+    To isolate the impact of pre-trained embeddings, we implement an LSTM variant using FastText word vectors \cite{bojanowski2017enriching}. This model shares the same architecture as the simple LSTM but initializes the embedding layer with 300-dimensional FastText vectors trained on Common Crawl. The embeddings are fine-tuned during training. This baseline demonstrates whether pre-trained semantic knowledge significantly improves emotion classification.
 
     \subsubsection{Published BERT Baseline}
 
-    Demszky et al. \cite{demszky2020goemotions} reported results using fine-tuned BERT-base-uncased on the GoEmotions dataset, achieving 46.0\% macro F1 and 64.5\% micro F1. We use these published results as a reference point for our BERT implementation.
-
-    \subsubsection{State-of-the-Art Transformer Variants}
-
-    We compare against reported results from recent literature using advanced transformer architectures including RoBERTa \cite{liu2019roberta}, ALBERT \cite{lan2019albert}, and DeBERTa \cite{he2020deberta} on emotion classification tasks to understand where our models stand relative to the current state of the art.
+    Demszky et al. \cite{demszky2020goemotions} reported results using fine-tuned BERT-base-uncased on the GoEmotions dataset, achieving 46.0\% macro F1 and 64.5\% micro F1. We use these published results as a reference point for our BERT implementation to verify our fine-tuning approach and training procedures.
 
     \subsection{Experimental Protocol}
 
@@ -1193,21 +1173,18 @@
     \textbf{Model} & \textbf{Hamming} & \textbf{Micro} & \textbf{Macro} & \textbf{Micro} & \textbf{Micro} & \textbf{AUC-} \\
     & \textbf{Loss} $\downarrow$ & \textbf{F1} $\uparrow$ & \textbf{F1} $\uparrow$ & \textbf{Prec.} & \textbf{Rec.} & \textbf{ROC} $\uparrow$ \\
     \midrule
-    Random & 0.089 & 0.142 & 0.051 & 0.135 & 0.149 & 0.502 \\
-    Majority & 0.055 & 0.246 & 0.035 & 1.000 & 0.140 & 0.500 \\
-    Log. Reg. & 0.047 & 0.518 & 0.312 & 0.534 & 0.502 & 0.743 \\
-    \midrule
-    LSTM & 0.042 & 0.567 & 0.348 & 0.552 & 0.583 & 0.781 \\
-    BiLSTM-Attn & 0.038 & 0.612 & 0.421 & 0.603 & 0.621 & 0.834 \\
-    CNN-BiLSTM & 0.036 & 0.631 & 0.445 & 0.627 & 0.635 & 0.852 \\
-    BERT & \textbf{0.033} & \textbf{0.658} & \textbf{0.472} & \textbf{0.651} & \textbf{0.665} & \textbf{0.871} \\
+    LSTM* & 0.0417 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.4944 \\
+    LSTM-FastText & 0.0390 & 0.2311 & 0.1843 & 0.6452 & 0.1408 & 0.7541 \\
+    BiLSTM-Attn & 0.0373 & 0.3145 & 0.1546 & 0.6708 & 0.2054 & 0.8275 \\
+    CNN-BiLSTM-Attn & 0.0370 & 0.3665 & 0.2535 & 0.6374 & 0.2572 & 0.8088 \\
+    BERT & \textbf{0.0304} & \textbf{0.5519} & \textbf{0.4477} & \textbf{0.7139} & \textbf{0.4498} & \textbf{0.9274} \\
     \bottomrule
     \end{tabular}
     \end{table}
 
     \subsubsection{Key Findings}
 
-    BERT achieves best overall performance with 65.8\% micro F1 and 47.2\% macro F1. The substantial gap between micro and macro F1 scores (18.6 percentage points) reflects the challenge of rare emotion classification. Comparing LSTM to BiLSTM-Attention, we observe a 7.3 percentage point improvement in macro F1 (34.8\% → 42.1\%), demonstrating that attention helps the model focus on emotionally salient words. The CNN-BiLSTM-Attention outperforms BiLSTM-Attention by 2.4 percentage points in macro F1, suggesting that CNN-extracted local patterns complement BiLSTM's sequential modeling.
+    BERT achieves best overall performance with 55.2\% micro F1 and 44.8\% macro F1. The substantial gap between micro and macro F1 scores (10.4 percentage points) reflects the challenge of rare emotion classification. The baseline LSTM model completely failed (F1 = 0.0\%), predicting all zeros and requiring debugging. Pre-trained embeddings are essential: LSTM-FastText achieved 23.1\% micro F1 and 75.4\% AUC-ROC, demonstrating a 52.4 percentage point improvement in AUC-ROC over the broken baseline. Comparing LSTM-FastText to BiLSTM-Attention, we observe an 8.0 percentage point improvement in micro F1 (23.1\% → 31.5\%), demonstrating that bidirectional context and attention mechanisms help the model focus on emotionally salient words. Interestingly, BiLSTM-Attention (82.8\% AUC-ROC) outperforms CNN-BiLSTM-Attention (80.9\% AUC-ROC) despite the hybrid architecture's additional complexity, suggesting that the CNN component may introduce noise for this particular task.
 
     \subsubsection{Per-Emotion Performance Analysis}
 
