@@ -501,7 +501,6 @@
 
     BERT provides best accuracy but is 32x larger and 10x slower than LSTM (110M vs 1.2M parameters, 12.4ms vs 1.2ms per sample). CNN-BiLSTM offers good balance: 7.1\% better macro F1 than LSTM with only 2.3x slower inference. For real-time applications, CNN-BiLSTM may be preferred over BERT.
 
-    Statistical significance testing using McNemar's test confirms all architectural improvements are statistically significant (p < 0.01).
 
     \section{Conclusion}\label{sec:conclusion}
 
@@ -510,12 +509,29 @@
     This work presented a comprehensive study of deep learning architectures for multi-label emotion classification on the GoEmotions dataset. We implemented and evaluated four models: a simple LSTM baseline, a BiLSTM with attention, a hybrid CNN-BiLSTM with attention, and a fine-tuned BERT model. BERT achieves the best performance (55.2\% micro F1, 44.8\% macro F1), demonstrating the power of pre-trained transformers. The baseline LSTM completely failed (0.0\% F1), highlighting the critical importance of pre-trained embeddings—LSTM-FastText achieved 23.1\% micro F1, a dramatic improvement. Bidirectional context and attention mechanisms provide significant improvements (31.5\% micro F1 for BiLSTM-Attention vs 23.1\% for LSTM-FastText), particularly for rare emotions. Through extensive ablation studies, we quantified the contribution of different architectural components, with pre-trained embeddings and attention mechanisms proving most critical.
 
     \subsection{Limitations}
-
-    Several limitations warrant discussion: (1) GoEmotions consists solely of Reddit comments, which may not generalize to other domains; (2) emotion annotation is inherently subjective with moderate inter-annotator agreement ($\alpha=0.66$); (3) despite specialized techniques, rare emotions remain poorly classified; (4) maximum sequence length (70-128 tokens) may truncate important context; (5) models struggle with sarcastic or ironic expressions; (6) BERT requires 10x more inference time than CNN-BiLSTM.
+    \textbf{Limitations:} The following limitations were identified in our study:
+    \begin{enumerate}
+        \item GoEmotions consists solely of Reddit comments, which may not generalize to other domains.
+        \item Emotion annotation is inherently subjective with moderate inter-annotator agreement ($\alpha=0.66$).
+        \item Despite specialized techniques, rare emotions remain poorly classified.
+        \item Maximum sequence length (70-128 tokens) may truncate important context.
+        \item Models struggle with sarcastic or ironic expressions.
+        \item BERT requires 10x more inference time than CNN-BiLSTM.
+    \end{enumerate}
 
     \subsection{Future Directions}
 
-    Based on our findings, we propose: (1) data augmentation techniques (back-translation, paraphrasing) to oversample rare emotions; (2) few-shot learning approaches (MAML, Prototypical Networks) to improve learning from limited examples; (3) hierarchical attention for word-level and sentence-level modeling; (4) multi-task learning jointly with sentiment analysis and emotion intensity regression; (5) newer transformers (RoBERTa, DeBERTa, domain-adapted BERT); (6) conversational context incorporation from Reddit threads; (7) model compression (knowledge distillation, quantization) to deploy BERT-level performance with LSTM-level efficiency; (8) cross-domain evaluation on Twitter, product reviews, news comments.
+    To address the limitations identified in our study, we propose several future directions for research:
+    \begin{enumerate}
+        \item Data augmentation techniques (back-translation, paraphrasing) to oversample rare emotions
+        \item Few-shot learning approaches (MAML, Prototypical Networks) to improve learning from limited examples
+        \item Hierarchical attention for word-level and sentence-level modeling
+        \item Multi-task learning jointly with sentiment analysis and emotion intensity regression
+        \item Newer transformers (RoBERTa, DeBERTa, domain-adapted BERT)
+        \item Conversational context incorporation from Reddit threads
+        \item Model compression (knowledge distillation, quantization) to deploy BERT-level performance with LSTM-level efficiency
+        \item Cross-domain evaluation on Twitter, product reviews, news comments
+        \end{enumerate}
 
     \subsection{Broader Impact}
 
@@ -536,10 +552,7 @@
 
     \textbf{Trained models} Trained models are available in \url{https://drive.google.com/drive/folders/13wW2r-JRe30SfZWQKqdIPJmo7HHtLSkD?usp=sharing}.
 
-    %%===========================================================================================%%
-    %% References - Using plain style for maximum compatibility
-    %%===========================================================================================%%
-
+    
     \begin{thebibliography}{99}
 
     \bibitem{demszky2020goemotions}
