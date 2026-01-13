@@ -31,7 +31,8 @@
       "Bash(then cat models/hybrid/ablation_study_config.json)",
       "Bash(python -m json.tool:*)",
       "Bash(else echo \"File not found\")",
-      "Bash(fi)"
+      "Bash(fi)",
+      "Bash(where:*)"
     ],
     "deny": [],
     "ask": []
